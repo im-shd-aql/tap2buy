@@ -34,7 +34,7 @@ mkdir -p /var/www
 cd /var/www
 
 echo "==> Cloning repo (you'll need to auth with GitHub)"
-git clone https://github.com/shd-aql/tap2buy.git
+git clone https://github.com/im-shd-aql/tap2buy.git
 cd tap2buy
 
 echo "==> Creating production .env files"
