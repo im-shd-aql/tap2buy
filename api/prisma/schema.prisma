@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  seller
+  admin
+}
+
+enum PaymentMethod {
+  online
+  cod
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  shipped
+  delivered
+  cancelled
+}
+
+enum TransactionType {
+  credit
+  debit
+  withdrawal
+}
+
+enum PayoutStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model User {
+  id            String        @id @default(uuid())
+  phone         String        @unique
+  name          String?
+  email         String?
+  passwordHash  String?       @map("password_hash")
+  role          UserRole      @default(seller)
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  store         Store?
+  wallet        Wallet?
+  bankAccounts  BankAccount[]
+  payouts       Payout[]
+
+  @@map("users")
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String   @db.VarChar(6)
+  expiresAt DateTime @map("expires_at")
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([phone, code])
+  @@map("otp_codes")
+}
+
+model Store {
+  id              String    @id @default(uuid())
+  sellerId        String    @unique @map("seller_id")
+  slug            String    @unique
+  name            String
+  category        String?
+  description     String?
+  logoUrl         String?   @map("logo_url")
+  themeColor      String    @default("#6366f1") @map("theme_color") @db.VarChar(7)
+  bannerUrl       String?   @map("banner_url")
+  announcement    String?
+  socialLinks     Json?     @map("social_links")
+  aboutText       String?   @map("about_text")
+  deliveryInfo    String?   @map("delivery_info")
+  returnPolicy    String?   @map("return_policy")
+  whatsappNumber  String?   @map("whatsapp_number")
+  fontStyle       String?   @default("modern") @map("font_style")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  seller      User      @relation(fields: [sellerId], references: [id])
+  products    Product[]
+  orders      Order[]
+
+  @@map("stores")
+}
+
+model Product {
+  id           String      @id @default(uuid())
+  storeId      String      @map("store_id")
+  name         String
+  description  String?
+  price        Decimal     @db.Decimal(10, 2)
+  comparePrice Decimal?    @map("compare_price") @db.Decimal(10, 2)
+  images       String[]
+  variants     Json?
+  stock        Int?
+  category     String?
+  isFeatured   Boolean     @default(false) @map("is_featured")
+  badge        String?
+  isActive     Boolean     @default(true) @map("is_active")
+  sortOrder    Int         @default(0) @map("sort_order")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  store        Store       @relation(fields: [storeId], references: [id])
+  orderItems   OrderItem[]
+
+  @@index([storeId])
+  @@map("products")
+}
+
+model Order {
+  id                String        @id @default(uuid())
+  orderNumber       String        @unique @map("order_number")
+  storeId           String        @map("store_id")
+  buyerName         String        @map("buyer_name")
+  buyerPhone        String        @map("buyer_phone")
+  buyerAddress      String        @map("buyer_address")
+  paymentMethod     PaymentMethod @map("payment_method")
+  paymentStatus     PaymentStatus @default(pending) @map("payment_status")
+  orderStatus       OrderStatus   @default(pending) @map("order_status")
+  subtotal          Decimal       @db.Decimal(10, 2)
+  serviceFee        Decimal       @map("service_fee") @db.Decimal(10, 2)
+  total             Decimal       @db.Decimal(10, 2)
+  bookingFee        Decimal?      @map("booking_fee") @db.Decimal(10, 2)
+  payhereOrderId    String?       @map("payhere_order_id")
+  confirmationToken String?       @map("confirmation_token")
+  notes             String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  store             Store         @relation(fields: [storeId], references: [id])
+  items             OrderItem[]
+
+  @@index([storeId])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String  @id @default(uuid())
+  orderId      String  @map("order_id")
+  productId    String  @map("product_id")
+  productName  String  @map("product_name")
+  productPrice Decimal @map("product_price") @db.Decimal(10, 2)
+  quantity     Int
+  variant      Json?
+
+  order        Order   @relation(fields: [orderId], references: [id])
+  product      Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Wallet {
+  id               String              @id @default(uuid())
+  sellerId         String              @unique @map("seller_id")
+  balance          Decimal             @default(0) @db.Decimal(10, 2)
+  totalEarned      Decimal             @default(0) @map("total_earned") @db.Decimal(10, 2)
+  totalWithdrawn   Decimal             @default(0) @map("total_withdrawn") @db.Decimal(10, 2)
+  isCodEnabled     Boolean             @default(false) @map("is_cod_enabled")
+  onlineOrderCount Int                 @default(0) @map("online_order_count")
+  createdAt        DateTime            @default(now()) @map("created_at")
+
+  seller           User                @relation(fields: [sellerId], references: [id])
+  transactions     WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id           String          @id @default(uuid())
+  walletId     String          @map("wallet_id")
+  type         TransactionType
+  amount       Decimal         @db.Decimal(10, 2)
+  description  String
+  referenceId  String?         @map("reference_id")
+  balanceAfter Decimal         @map("balance_after") @db.Decimal(10, 2)
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  wallet       Wallet          @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@map("wallet_transactions")
+}
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  sellerId      String   @map("seller_id")
+  bankName      String   @map("bank_name")
+  branch        String
+  accountNumber String   @map("account_number")
+  accountName   String   @map("account_name")
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  seller        User     @relation(fields: [sellerId], references: [id])
+  payouts       Payout[]
+
+  @@map("bank_accounts")
+}
+
+model Payout {
+  id            String       @id @default(uuid())
+  sellerId      String       @map("seller_id")
+  amount        Decimal      @db.Decimal(10, 2)
+  status        PayoutStatus @default(pending)
+  bankAccountId String       @map("bank_account_id")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  completedAt   DateTime?    @map("completed_at")
+
+  seller        User         @relation(fields: [sellerId], references: [id])
+  bankAccount   BankAccount  @relation(fields: [bankAccountId], references: [id])
+
+  @@map("payouts")
+}
