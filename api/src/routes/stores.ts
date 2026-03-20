@@ -49,6 +49,14 @@ router.post("/", requireAuth, requireSeller, async (req: Request, res: Response,
       throw new AppError("You already have a store", 409);
     }
 
+    // Check for duplicate store name (case-insensitive)
+    const nameExists = await prisma.store.findFirst({
+      where: { name: { equals: data.name, mode: "insensitive" } },
+    });
+    if (nameExists) {
+      throw new AppError("A store with this name already exists. Please choose a different name.", 409);
+    }
+
     const slug = await generateUniqueSlug(data.name);
 
     const store = await prisma.store.create({
@@ -120,6 +128,19 @@ router.put("/:id", requireAuth, requireSeller, async (req: Request, res: Respons
 
     if (!store || store.sellerId !== req.user!.id) {
       throw new AppError("Store not found", 404);
+    }
+
+    // Check for duplicate store name on rename (case-insensitive)
+    if (data.name && data.name.toLowerCase() !== store.name.toLowerCase()) {
+      const nameExists = await prisma.store.findFirst({
+        where: {
+          name: { equals: data.name, mode: "insensitive" },
+          id: { not: storeId },
+        },
+      });
+      if (nameExists) {
+        throw new AppError("A store with this name already exists. Please choose a different name.", 409);
+      }
     }
 
     // Transform null socialLinks to Prisma.JsonNull for Json fields

@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import sharp from "sharp";
 import { requireAuth } from "../middleware/auth";
 import { upload } from "../middleware/upload";
 import { uploadFile } from "../services/storage";
@@ -7,6 +8,13 @@ import { env } from "../config/env";
 import { param } from "../utils/params";
 import fs from "fs";
 import path from "path";
+
+async function optimizeImage(buffer: Buffer): Promise<Buffer> {
+  return sharp(buffer)
+    .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 80 })
+    .toBuffer();
+}
 
 const router = Router();
 
@@ -23,22 +31,22 @@ router.post(
         throw new AppError("No file uploaded", 400);
       }
 
+      // Optimize: resize to max 1200px and convert to WebP
+      const optimized = await optimizeImage(req.file.buffer);
+      const optimizedName = req.file.originalname.replace(/\.[^.]+$/, ".webp");
+
       let url: string;
 
       if (env.isDev && !env.r2AccountId) {
         if (!fs.existsSync(LOCAL_UPLOAD_DIR)) {
           fs.mkdirSync(LOCAL_UPLOAD_DIR, { recursive: true });
         }
-        const filename = `${Date.now()}-${req.file.originalname}`;
+        const filename = `${Date.now()}-${optimizedName}`;
         const filepath = path.join(LOCAL_UPLOAD_DIR, filename);
-        fs.writeFileSync(filepath, req.file.buffer);
+        fs.writeFileSync(filepath, optimized);
         url = `${env.apiUrl}/api/upload/files/${filename}`;
       } else {
-        url = await uploadFile(
-          req.file.buffer,
-          req.file.originalname,
-          req.file.mimetype
-        );
+        url = await uploadFile(optimized, optimizedName, "image/webp");
       }
 
       res.json({ url });
