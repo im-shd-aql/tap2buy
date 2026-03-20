@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
-import { Upload, X, ArrowLeft, Star, Tag } from "lucide-react";
+import { Upload, X, ArrowLeft, Star, Tag, Plus } from "lucide-react";
 import Link from "next/link";
 
 const BADGE_OPTIONS = [
@@ -34,6 +34,7 @@ export default function NewProductPage() {
   const [newCategory, setNewCategory] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
   const [badge, setBadge] = useState("");
+  const [variantOptions, setVariantOptions] = useState<{name: string; values: string[]}[]>([]);
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -64,6 +65,9 @@ export default function NewProductPage() {
           setCategory(product.category || "");
           setIsFeatured(product.isFeatured || false);
           setBadge(product.badge || "");
+          if (product.variants?.options) {
+            setVariantOptions(product.variants.options);
+          }
         })
         .catch(() => router.push("/dashboard/products"));
     }
@@ -97,6 +101,7 @@ export default function NewProductPage() {
       price: parseFloat(price),
       comparePrice: comparePrice ? parseFloat(comparePrice) : undefined,
       images,
+      variants: variantOptions.length > 0 ? { options: variantOptions } : null,
       stock: stock ? parseInt(stock) : null,
       isActive,
       category: finalCategory || null,
@@ -198,6 +203,59 @@ export default function NewProductPage() {
             min="0"
             className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
+        </div>
+
+        {/* Variants */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Variants <span className="text-gray-400">(optional)</span>
+          </label>
+          {variantOptions.map((opt, idx) => (
+            <div key={idx} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={opt.name}
+                onChange={(e) => {
+                  const updated = [...variantOptions];
+                  updated[idx] = { ...updated[idx], name: e.target.value };
+                  setVariantOptions(updated);
+                }}
+                placeholder="e.g. Size"
+                className="w-28 px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <input
+                type="text"
+                value={opt.values.join(", ")}
+                onChange={(e) => {
+                  const updated = [...variantOptions];
+                  updated[idx] = {
+                    ...updated[idx],
+                    values: e.target.value.split(",").map((v) => v.trim()).filter(Boolean),
+                  };
+                  setVariantOptions(updated);
+                }}
+                placeholder="S, M, L, XL"
+                className="flex-1 px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={() => setVariantOptions((prev) => prev.filter((_, i) => i !== idx))}
+                className="w-10 h-10 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {variantOptions.length < 5 && (
+            <button
+              type="button"
+              onClick={() => setVariantOptions((prev) => [...prev, { name: "", values: [] }])}
+              className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 font-medium py-1"
+            >
+              <Plus className="w-4 h-4" />
+              Add Option (e.g. Size, Color)
+            </button>
+          )}
         </div>
 
         {/* Category */}

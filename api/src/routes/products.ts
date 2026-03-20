@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../config/database";
 import { requireAuth, requireSeller } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
@@ -7,13 +8,22 @@ import { param } from "../utils/params";
 
 const router = Router();
 
+const variantOptionSchema = z.object({
+  name: z.string().min(1).max(50),
+  values: z.array(z.string().min(1).max(50)).min(1).max(20),
+});
+
+const variantsSchema = z.object({
+  options: z.array(variantOptionSchema).max(5),
+}).optional().nullable();
+
 const productSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
   price: z.number().positive(),
   comparePrice: z.number().positive().optional(),
   images: z.array(z.string()).default([]),
-  variants: z.any().optional(),
+  variants: variantsSchema,
   stock: z.number().int().min(0).optional().nullable(),
   category: z.string().max(100).optional().nullable(),
   isFeatured: z.boolean().optional(),
@@ -49,7 +59,7 @@ router.post(
           price: data.price,
           comparePrice: data.comparePrice,
           images: data.images,
-          variants: data.variants || undefined,
+          variants: data.variants === null ? Prisma.JsonNull : data.variants ?? undefined,
           stock: data.stock ?? undefined,
           category: data.category ?? undefined,
           isFeatured: data.isFeatured ?? false,
@@ -126,9 +136,15 @@ router.put(
         throw new AppError("Product not found", 404);
       }
 
+      const { variants, ...rest } = data;
+      const updateData: any = { ...rest };
+      if (variants !== undefined) {
+        updateData.variants = variants === null ? Prisma.JsonNull : variants;
+      }
+
       const updated = await prisma.product.update({
         where: { id: productId },
-        data,
+        data: updateData,
       });
 
       res.json({ product: updated });

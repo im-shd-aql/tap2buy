@@ -72,13 +72,13 @@ export default function ProductListCard({
       href={`/${storeSlug}/${product.id}`}
       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex group"
     >
-      <div className="w-[120px] h-[120px] bg-gray-100 relative overflow-hidden flex-shrink-0">
+      <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] bg-gray-100 relative overflow-hidden flex-shrink-0">
         {product.images[0] ? (
           <Image
             src={product.images[0]}
             alt={product.name}
             fill
-            sizes="120px"
+            sizes="(max-width: 640px) 100px, 120px"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (

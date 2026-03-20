@@ -17,6 +17,8 @@ interface Props {
   };
   outOfStock: boolean;
   themeColor: string;
+  variant?: Record<string, string>;
+  variantRequired?: boolean;
 }
 
 export default function AddToCartButton({
@@ -25,6 +27,8 @@ export default function AddToCartButton({
   product,
   outOfStock,
   themeColor,
+  variant,
+  variantRequired,
 }: Props) {
   const router = useRouter();
   const { addItem } = useCart();
@@ -33,11 +37,13 @@ export default function AddToCartButton({
   const [quantity, setQuantity] = useState(1);
 
   function handleAdd() {
+    if (variantRequired) return;
     addItem(storeId, {
       productId: product.id,
       name: product.name,
       price: product.price,
       image: product.image,
+      ...(variant ? { variant } : {}),
     }, quantity);
     toast(`Added ${quantity > 1 ? `${quantity}x ` : ""}"${product.name}" to cart`, `/${storeSlug}/cart`);
     setAdded(true);
@@ -54,6 +60,8 @@ export default function AddToCartButton({
       </button>
     );
   }
+
+  const disabled = !!variantRequired;
 
   return (
     <>
@@ -85,14 +93,17 @@ export default function AddToCartButton({
       <div className="hidden sm:flex gap-3">
         <button
           onClick={handleAdd}
+          disabled={disabled}
           className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-white rounded-2xl font-semibold transition-all duration-200 active:scale-[0.98] ${
             added ? "animate-pulse-once" : ""
-          }`}
+          } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           style={{
             background: added
               ? "#10b981"
-              : `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`,
-            boxShadow: `0 4px 14px ${themeColor}40`,
+              : disabled
+                ? "#9ca3af"
+                : `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`,
+            boxShadow: disabled ? "none" : `0 4px 14px ${themeColor}40`,
           }}
         >
           {added ? (
@@ -100,6 +111,8 @@ export default function AddToCartButton({
               <Check className="w-5 h-5" strokeWidth={3} />
               Added to Cart!
             </>
+          ) : disabled ? (
+            "Select options above"
           ) : (
             <>
               <ShoppingCart className="w-5 h-5" />
@@ -110,10 +123,11 @@ export default function AddToCartButton({
         <button
           onClick={() => {
             handleAdd();
-            router.push(`/${storeSlug}/cart`);
+            if (!disabled) router.push(`/${storeSlug}/cart`);
           }}
-          className="px-8 py-3.5 border-2 rounded-2xl font-semibold transition-all duration-200 hover:bg-gray-50 active:scale-[0.98] flex items-center gap-2"
-          style={{ borderColor: themeColor, color: themeColor }}
+          disabled={disabled}
+          className={`px-8 py-3.5 border-2 rounded-2xl font-semibold transition-all duration-200 hover:bg-gray-50 active:scale-[0.98] flex items-center gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          style={{ borderColor: disabled ? "#9ca3af" : themeColor, color: disabled ? "#9ca3af" : themeColor }}
         >
           <Zap className="w-4 h-4" />
           Buy Now
@@ -124,14 +138,17 @@ export default function AddToCartButton({
       <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-200/50 px-4 py-3 flex gap-2.5 z-50 sm:hidden safe-bottom">
         <button
           onClick={handleAdd}
+          disabled={disabled}
           className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-white rounded-2xl font-semibold text-sm active:scale-[0.97] transition-all duration-200 ${
             added ? "animate-pulse-once" : ""
-          }`}
+          } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           style={{
             background: added
               ? "#10b981"
-              : `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`,
-            boxShadow: `0 4px 14px ${themeColor}30`,
+              : disabled
+                ? "#9ca3af"
+                : `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`,
+            boxShadow: disabled ? "none" : `0 4px 14px ${themeColor}30`,
           }}
         >
           {added ? (
@@ -139,6 +156,8 @@ export default function AddToCartButton({
               <Check className="w-5 h-5" strokeWidth={3} />
               Added!
             </>
+          ) : disabled ? (
+            "Select options"
           ) : (
             <>
               <ShoppingCart className="w-5 h-5" />
@@ -149,10 +168,11 @@ export default function AddToCartButton({
         <button
           onClick={() => {
             handleAdd();
-            router.push(`/${storeSlug}/cart`);
+            if (!disabled) router.push(`/${storeSlug}/cart`);
           }}
-          className="px-5 py-3.5 border-2 rounded-2xl font-semibold text-sm active:scale-[0.97] transition-all duration-200 flex items-center gap-1.5"
-          style={{ borderColor: themeColor, color: themeColor }}
+          disabled={disabled}
+          className={`px-5 py-3.5 border-2 rounded-2xl font-semibold text-sm active:scale-[0.97] transition-all duration-200 flex items-center gap-1.5 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          style={{ borderColor: disabled ? "#9ca3af" : themeColor, color: disabled ? "#9ca3af" : themeColor }}
         >
           <Zap className="w-4 h-4" />
           Buy Now

@@ -38,7 +38,7 @@ export default function StoreContent({
   const [activeCategory, setActiveCategory] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
@@ -144,21 +144,28 @@ export default function StoreContent({
 
         {/* Product count header + sort + view toggle */}
         {products.length > 0 && (
-          <div className="flex items-center justify-between mb-4 gap-3">
-            <div className="flex-1 min-w-0">
-              {!search && !activeCategory && (
-                <h2 className="font-bold text-lg">All Products</h2>
-              )}
-              {activeCategory && (
-                <h2 className="font-bold text-lg">{activeCategory}</h2>
-              )}
-              {search && (
-                <h2 className="font-bold text-lg truncate">Results</h2>
-              )}
+          <div className="mb-4 space-y-2">
+            {/* Row 1: Title + item count */}
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                {!search && !activeCategory && (
+                  <h2 className="font-bold text-lg">All Products</h2>
+                )}
+                {activeCategory && (
+                  <h2 className="font-bold text-lg">{activeCategory}</h2>
+                )}
+                {search && (
+                  <h2 className="font-bold text-lg truncate">Results</h2>
+                )}
+              </div>
+              <span className="text-sm text-gray-400 tabular-nums flex-shrink-0">
+                {filtered.length} items
+              </span>
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Sort pills */}
+            {/* Row 2: Sort + view toggle */}
+            <div className="flex items-center justify-between gap-2">
+              {/* Sort pills (desktop) */}
               <div className="hidden sm:flex items-center gap-1.5">
                 {sortOptions.map((opt) => (
                   <button
@@ -176,7 +183,7 @@ export default function StoreContent({
                 ))}
               </div>
 
-              {/* Mobile sort dropdown */}
+              {/* Sort dropdown (mobile) */}
               <div className="sm:hidden relative">
                 <select
                   value={sortBy}
@@ -211,11 +218,6 @@ export default function StoreContent({
                   <List className="w-4 h-4" />
                 </button>
               </div>
-
-              {/* Item count */}
-              <span className="text-sm text-gray-400 tabular-nums">
-                {filtered.length} items
-              </span>
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ import AddToCartButton from "./add-to-cart";
 import ImageGallery from "./image-gallery";
 import ShareSheet from "./share-sheet";
 import RecentlyViewedTracker from "./recently-viewed-tracker";
+import VariantSection from "./variant-section";
 import Link from "next/link";
 import { ArrowLeft, MessageCircle, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
@@ -166,16 +167,16 @@ export default async function ProductPage({
           <h1 className="text-xl sm:text-2xl font-bold leading-tight">{product.name}</h1>
 
           {/* Price section */}
-          <div className="flex items-baseline gap-3 mt-3">
+          <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mt-3">
             <span
-              className="text-3xl font-bold"
+              className="text-2xl sm:text-3xl font-bold"
               style={{ color: store.themeColor }}
             >
               LKR {Number(product.price).toLocaleString()}
             </span>
             {product.comparePrice && (
               <>
-                <span className="text-lg text-gray-400 line-through">
+                <span className="text-base sm:text-lg text-gray-400 line-through">
                   LKR {Number(product.comparePrice).toLocaleString()}
                 </span>
                 <span className="bg-red-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">
@@ -209,21 +210,22 @@ export default async function ProductPage({
           )}
         </div>
 
-        {/* Add to cart */}
-        <div className="bg-white px-4 pb-6">
-          <AddToCartButton
-            storeId={store.id}
-            storeSlug={storeSlug}
-            product={{
-              id: product.id,
-              name: product.name,
-              price: Number(product.price),
-              image: product.images[0] || "",
-            }}
-            outOfStock={product.stock === 0}
-            themeColor={store.themeColor}
-          />
-        </div>
+        {/* Variant selector + Add to cart */}
+        <VariantSection
+          storeId={store.id}
+          storeSlug={storeSlug}
+          product={{
+            id: product.id,
+            name: product.name,
+            price: Number(product.price),
+            image: product.images[0] || "",
+          }}
+          variants={
+            product.variants?.options?.length > 0 ? product.variants : null
+          }
+          outOfStock={product.stock === 0}
+          themeColor={store.themeColor}
+        />
 
         {/* WhatsApp Ask */}
         {whatsappAskLink && (

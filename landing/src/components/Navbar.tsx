@@ -67,27 +67,30 @@ export default function Navbar() {
           </a>
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="flex flex-col gap-1.5 md:hidden"
-          aria-label="Toggle menu"
-        >
-          <motion.span
-            animate={mobileOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-            className="block h-0.5 w-6 bg-dark"
-          />
-          <motion.span
-            animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
-            className="block h-0.5 w-6 bg-dark"
-          />
-          <motion.span
-            animate={
-              mobileOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }
-            }
-            className="block h-0.5 w-6 bg-dark"
-          />
-        </button>
+        {/* Mobile right side: lang toggle + hamburger */}
+        <div className="flex items-center gap-3 md:hidden">
+          <LangToggle />
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="flex flex-col gap-1.5"
+            aria-label="Toggle menu"
+          >
+            <motion.span
+              animate={mobileOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+              className="block h-0.5 w-6 bg-dark"
+            />
+            <motion.span
+              animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
+              className="block h-0.5 w-6 bg-dark"
+            />
+            <motion.span
+              animate={
+                mobileOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }
+              }
+              className="block h-0.5 w-6 bg-dark"
+            />
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}
@@ -110,9 +113,6 @@ export default function Navbar() {
                   {link.label}
                 </a>
               ))}
-              <div className="flex items-center gap-4 pt-2">
-                <LangToggle />
-              </div>
               <a
                 href="https://wa.me/94XXXXXXXXX?text=Hi!%20I%20want%20to%20create%20my%20Tap2Buy%20store"
                 target="_blank"

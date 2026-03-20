@@ -63,6 +63,7 @@ export default function CartPage() {
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
+            ...(item.variant ? { variant: item.variant } : {}),
           })),
         }
       );
@@ -124,7 +125,7 @@ export default function CartPage() {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-5">
           {items.map((item, idx) => (
             <div
-              key={item.productId}
+              key={`${item.productId}-${JSON.stringify(item.variant || {})}`}
               className={`flex gap-3.5 p-4 ${idx > 0 ? "border-t border-gray-100" : ""}`}
             >
               <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
@@ -144,19 +145,24 @@ export default function CartPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{item.name}</p>
+                {item.variant && Object.keys(item.variant).length > 0 && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {Object.entries(item.variant).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                  </p>
+                )}
                 <p className="text-sm text-gray-500 mt-0.5">
                   LKR {item.price.toLocaleString()}
                 </p>
                 <div className="flex items-center gap-2 mt-2.5">
                   <button
-                    onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                    onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variant)}
                     className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
                   <span className="text-sm font-semibold w-6 text-center tabular-nums">{item.quantity}</span>
                   <button
-                    onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                    onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variant)}
                     className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -165,7 +171,7 @@ export default function CartPage() {
                     LKR {(item.price * item.quantity).toLocaleString()}
                   </span>
                   <button
-                    onClick={() => removeItem(item.productId)}
+                    onClick={() => removeItem(item.productId, item.variant)}
                     className="w-8 h-8 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg flex items-center justify-center transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
