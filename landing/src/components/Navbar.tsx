@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/hooks/useLang";
 import LangToggle from "./LangToggle";
@@ -35,7 +34,7 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Logo */}
         <a href="/" className="flex items-center gap-2" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-          <Image src="/icon.png" alt="Tap2Buy" width={32} height={32} />
+          <img src="/logo.png" alt="Tap2Buy" width={32} height={32} />
           <span className="text-xl font-bold text-dark">
             Tap2Buy
           </span>
