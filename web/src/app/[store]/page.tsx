@@ -332,7 +332,8 @@ export default async function StorePage({
         href={whatsappLink}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-5 right-5 w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 z-10"
+        className="fixed right-5 w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 z-10"
+        style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <MessageCircle className="w-6 h-6" />
       </a>

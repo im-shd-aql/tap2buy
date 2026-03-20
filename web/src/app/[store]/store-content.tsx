@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Package, Sparkles, LayoutGrid, List, ArrowUpDown } from "lucide-react";
 import SearchBar from "./search-bar";
 import CategoryTabs from "./category-tabs";
@@ -34,9 +34,17 @@ export default function StoreContent({
   themeColor: string;
 }) {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleSearch = useCallback((value: string) => {
+    setSearch(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 200);
+  }, []);
 
   // Restore view mode from localStorage
   useEffect(() => {
@@ -68,21 +76,20 @@ export default function StoreContent({
 
   const filtered = useMemo(() => {
     let result = products;
-    if (search) {
-      const q = search.toLowerCase();
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
       result = result.filter((p) => p.name.toLowerCase().includes(q));
     }
     if (activeCategory) {
       result = result.filter((p) => p.category === activeCategory);
     }
-    // Apply sorting
     if (sortBy === "price-asc") {
       result = [...result].sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sortBy === "price-desc") {
       result = [...result].sort((a, b) => Number(b.price) - Number(a.price));
     }
     return result;
-  }, [products, search, activeCategory, sortBy]);
+  }, [products, debouncedSearch, activeCategory, sortBy]);
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "default", label: "Newest" },
@@ -95,7 +102,7 @@ export default function StoreContent({
       {/* Search */}
       <SearchBar
         value={search}
-        onChange={setSearch}
+        onChange={handleSearch}
         resultCount={search ? filtered.length : undefined}
         themeColor={themeColor}
       />
@@ -226,7 +233,7 @@ export default function StoreContent({
             </p>
             {search && (
               <button
-                onClick={() => setSearch("")}
+                onClick={() => handleSearch("")}
                 className="mt-3 text-sm font-medium hover:underline"
                 style={{ color: themeColor }}
               >

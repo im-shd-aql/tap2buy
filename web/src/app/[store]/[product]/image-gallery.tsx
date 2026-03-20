@@ -16,12 +16,16 @@ export default function ImageGallery({
   const [active, setActive] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const scaleRef = useRef(1);
+  const translateRef = useRef({ x: 0, y: 0 });
+  const [, forceRender] = useState(0);
   const lastTouchDistRef = useRef(0);
   const lastTouchCenterRef = useRef({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
   const lastPanRef = useRef({ x: 0, y: 0 });
+  const lightboxImgRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number>(0);
+  const lastTapRef = useRef(0);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -33,8 +37,17 @@ export default function ImageGallery({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        handleScroll();
+        ticking = false;
+      });
+    }
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
   }, [handleScroll]);
 
   // Lock body scroll when lightbox is open
@@ -45,9 +58,17 @@ export default function ImageGallery({
     }
   }, [lightboxOpen]);
 
+  function applyTransform() {
+    const el = lightboxImgRef.current;
+    if (!el) return;
+    const s = scaleRef.current;
+    const t = translateRef.current;
+    el.style.transform = `scale(${s}) translate(${t.x / s}px, ${t.y / s}px)`;
+  }
+
   function openLightbox() {
-    setScale(1);
-    setTranslate({ x: 0, y: 0 });
+    scaleRef.current = 1;
+    translateRef.current = { x: 0, y: 0 };
     setLightboxOpen(true);
   }
 
@@ -55,18 +76,37 @@ export default function ImageGallery({
     setLightboxOpen(false);
   }
 
-  // Desktop: double click to toggle zoom
-  function handleDoubleClick() {
-    if (scale > 1) {
-      setScale(1);
-      setTranslate({ x: 0, y: 0 });
+  // Double-tap to toggle zoom (works on both touch and click)
+  function handleDoubleTap() {
+    if (scaleRef.current > 1) {
+      scaleRef.current = 1;
+      translateRef.current = { x: 0, y: 0 };
     } else {
-      setScale(2.5);
+      scaleRef.current = 2.5;
     }
+    if (lightboxImgRef.current) {
+      lightboxImgRef.current.style.transition = "transform 0.2s ease-out";
+    }
+    applyTransform();
+    forceRender((n) => n + 1);
+    setTimeout(() => {
+      if (lightboxImgRef.current) {
+        lightboxImgRef.current.style.transition = "none";
+      }
+    }, 200);
   }
 
-  // Touch: pinch to zoom
   function handleTouchStart(e: React.TouchEvent) {
+    // Detect double-tap
+    const now = Date.now();
+    if (e.touches.length === 1 && now - lastTapRef.current < 300) {
+      e.preventDefault();
+      handleDoubleTap();
+      lastTapRef.current = 0;
+      return;
+    }
+    lastTapRef.current = now;
+
     if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -75,11 +115,11 @@ export default function ImageGallery({
         x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
         y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
       };
-    } else if (e.touches.length === 1 && scale > 1) {
+    } else if (e.touches.length === 1 && scaleRef.current > 1) {
       isDraggingRef.current = true;
       lastPanRef.current = {
-        x: e.touches[0].clientX - translate.x,
-        y: e.touches[0].clientY - translate.y,
+        x: e.touches[0].clientX - translateRef.current.x,
+        y: e.touches[0].clientY - translateRef.current.y,
       };
     }
   }
@@ -91,26 +131,39 @@ export default function ImageGallery({
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (lastTouchDistRef.current) {
-        const newScale = Math.min(5, Math.max(1, scale * (dist / lastTouchDistRef.current)));
-        setScale(newScale);
-        if (newScale <= 1) setTranslate({ x: 0, y: 0 });
+        const newScale = Math.min(5, Math.max(1, scaleRef.current * (dist / lastTouchDistRef.current)));
+        scaleRef.current = newScale;
+        if (newScale <= 1) translateRef.current = { x: 0, y: 0 };
       }
       lastTouchDistRef.current = dist;
-    } else if (e.touches.length === 1 && isDraggingRef.current && scale > 1) {
-      setTranslate({
+    } else if (e.touches.length === 1 && isDraggingRef.current && scaleRef.current > 1) {
+      translateRef.current = {
         x: e.touches[0].clientX - lastPanRef.current.x,
         y: e.touches[0].clientY - lastPanRef.current.y,
-      });
+      };
     }
+
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(applyTransform);
   }
 
   function handleTouchEnd() {
     lastTouchDistRef.current = 0;
     isDraggingRef.current = false;
-    if (scale <= 1) {
-      setScale(1);
-      setTranslate({ x: 0, y: 0 });
+    if (scaleRef.current <= 1) {
+      scaleRef.current = 1;
+      translateRef.current = { x: 0, y: 0 };
+      if (lightboxImgRef.current) {
+        lightboxImgRef.current.style.transition = "transform 0.2s ease-out";
+        applyTransform();
+        setTimeout(() => {
+          if (lightboxImgRef.current) {
+            lightboxImgRef.current.style.transition = "none";
+          }
+        }, 200);
+      }
     }
+    forceRender((n) => n + 1);
   }
 
   if (images.length === 0) {
@@ -139,6 +192,7 @@ export default function ImageGallery({
               fill
               sizes="(max-width: 768px) 100vw, 768px"
               priority={i === 0}
+              loading={i === 0 ? "eager" : "lazy"}
               className="object-cover"
             />
           </div>
@@ -180,8 +234,8 @@ export default function ImageGallery({
       {/* Lightbox */}
       {lightboxOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-          onDoubleClick={handleDoubleClick}
+          className="fixed inset-0 z-50 bg-black flex items-center justify-center touch-none"
+          onDoubleClick={handleDoubleTap}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -203,16 +257,13 @@ export default function ImageGallery({
 
           {/* Zoom hint */}
           <div className="absolute bottom-6 left-0 right-0 z-10 text-center text-white/50 text-xs">
-            {scale > 1 ? "Double-tap to reset" : "Pinch or double-tap to zoom"}
+            {scaleRef.current > 1 ? "Double-tap to reset" : "Pinch or double-tap to zoom"}
           </div>
 
           {/* Image */}
           <div
-            className="w-full h-full flex items-center justify-center"
-            style={{
-              transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
-              transition: isDraggingRef.current ? "none" : "transform 0.2s ease-out",
-            }}
+            ref={lightboxImgRef}
+            className="w-full h-full flex items-center justify-center will-change-transform"
           >
             <div className="relative w-full aspect-square max-h-screen">
               <Image

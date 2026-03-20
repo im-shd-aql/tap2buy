@@ -21,9 +21,14 @@ export default function StickyHeader({
   const { itemCount } = useCart();
 
   useEffect(() => {
+    let ticking = false;
     function handleScroll() {
-      // Show sticky header when scrolled past 200px (past the hero)
-      setVisible(window.scrollY > 200);
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setVisible(window.scrollY > 200);
+        ticking = false;
+      });
     }
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();

@@ -21,7 +21,6 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
-  scroll-behavior: smooth;
 }
 
 /* Prevent iOS zoom on input focus */
@@ -131,6 +130,7 @@ select {
 }
 .animate-confetti {
   animation: confetti-fall 1.2s ease-out forwards;
+  will-change: transform, opacity;
 }
 
 /* Slide-out for announcement bar dismiss */
