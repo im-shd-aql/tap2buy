@@ -67,8 +67,10 @@ export default function RecentlyViewed({
   return (
     <section className="mt-8 mb-2">
       <div className="flex items-center gap-2 mb-4">
-        <Clock className="w-4 h-4 text-gray-400" />
-        <h2 className="font-bold text-sm text-gray-500">Recently Viewed</h2>
+        <div className="w-6 h-6 rounded-md flex items-center justify-center bg-gray-100">
+          <Clock className="w-3.5 h-3.5 text-gray-400" />
+        </div>
+        <h2 className="font-semibold tracking-tight text-sm text-gray-500">Recently Viewed</h2>
       </div>
       <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
         <div className="flex gap-3" style={{ minWidth: "min-content" }}>
@@ -76,7 +78,7 @@ export default function RecentlyViewed({
             <Link
               key={product.id}
               href={`/${storeSlug}/${product.id}`}
-              className="w-28 flex-shrink-0 bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+              className="w-28 flex-shrink-0 bg-white rounded-xl overflow-hidden shadow-sm ring-1 ring-gray-100 hover:ring-gray-200 hover:shadow-md transition-all duration-200"
             >
               <div className="aspect-square bg-gray-100 relative">
                 {product.image ? (

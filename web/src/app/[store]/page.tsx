@@ -104,7 +104,7 @@ function SocialIcon({ type, url }: { type: string; url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all duration-200 hover:scale-110"
+      className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-white/30 transition-all duration-200 hover:scale-110"
     >
       {icons[type] || null}
     </a>
@@ -144,7 +144,7 @@ export default async function StorePage({
       )}`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100/50">
       <StickyHeader
         storeName={store.name}
         storeSlug={store.slug}
@@ -183,7 +183,7 @@ export default async function StorePage({
               <div className="max-w-3xl mx-auto flex items-end justify-between">
                 <div className="flex items-center gap-3.5">
                   {store.logoUrl && (
-                    <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/40 shadow-lg bg-white/10 backdrop-blur-sm flex-shrink-0">
+                    <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/30 shadow-xl bg-white/15 backdrop-blur-md ring-1 ring-white/10 flex-shrink-0">
                       <Image
                         src={store.logoUrl}
                         alt={store.name}
@@ -194,7 +194,7 @@ export default async function StorePage({
                     </div>
                   )}
                   <div>
-                    <h1 className="text-2xl font-bold drop-shadow-md">{store.name}</h1>
+                    <h1 className="text-2xl font-bold tracking-tight drop-shadow-md">{store.name}</h1>
                     {store.category && (
                       <p className="text-sm opacity-90 mt-0.5">{store.category}</p>
                     )}
@@ -207,15 +207,17 @@ export default async function StorePage({
         ) : (
           /* Gradient variant (no banner) */
           <div
-            className="px-4 py-10"
+            className="px-4 py-10 relative overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${store.themeColor} 0%, ${store.themeColor}bb 50%, ${store.themeColor}88 100%)`,
             }}
           >
+            <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 bg-white -translate-y-1/2 translate-x-1/4" />
+            <div className="absolute bottom-0 left-8 w-24 h-24 rounded-full opacity-[0.07] bg-white" />
             <div className="max-w-3xl mx-auto flex items-center justify-between">
               <div className="flex items-center gap-3.5">
                 {store.logoUrl && (
-                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/30 shadow-lg bg-white/10 backdrop-blur-sm flex-shrink-0">
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/30 shadow-xl bg-white/15 backdrop-blur-md ring-1 ring-white/10 flex-shrink-0">
                     <Image
                       src={store.logoUrl}
                       alt={store.name}
@@ -226,7 +228,7 @@ export default async function StorePage({
                   </div>
                 )}
                 <div>
-                  <h1 className="text-2xl font-bold">{store.name}</h1>
+                  <h1 className="text-2xl font-bold tracking-tight">{store.name}</h1>
                   {store.category && (
                     <p className="text-sm opacity-90 mt-0.5">{store.category}</p>
                   )}
@@ -239,7 +241,7 @@ export default async function StorePage({
         {/* Description + Social links row below hero */}
         {(store.description || socialEntries.length > 0) && (
           <div
-            className="px-4 py-3"
+            className="px-4 py-3 border-t border-white/15"
             style={{ backgroundColor: store.themeColor }}
           >
             <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
@@ -269,7 +271,7 @@ export default async function StorePage({
       {/* About Section */}
       {store.aboutText && (
         <section className="max-w-3xl mx-auto px-4 mb-6">
-          <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <div className="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100 border-l-4" style={{ borderLeftColor: store.themeColor }}>
             <div className="flex items-center gap-3 mb-3">
               {store.logoUrl && (
                 <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
@@ -296,10 +298,10 @@ export default async function StorePage({
       {/* Store Info Footer */}
       {(store.deliveryInfo || store.returnPolicy) && (
         <section className="max-w-3xl mx-auto px-4 mb-6">
-          <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100 space-y-4">
             {store.deliveryInfo && (
               <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
                   <Truck className="w-5 h-5 text-blue-500" />
                 </div>
                 <div>
@@ -312,7 +314,7 @@ export default async function StorePage({
             )}
             {store.returnPolicy && (
               <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center flex-shrink-0">
                   <RotateCcw className="w-5 h-5 text-green-500" />
                 </div>
                 <div>
@@ -348,7 +350,7 @@ export default async function StorePage({
                 href={url as string}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-all duration-200"
+                className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600 hover:shadow-sm hover:scale-105 transition-all duration-200"
               >
                 {type === "instagram" && <Instagram className="w-4 h-4" />}
                 {type === "facebook" && <Facebook className="w-4 h-4" />}
@@ -364,7 +366,7 @@ export default async function StorePage({
         <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
           <ShieldCheck className="w-3.5 h-3.5" />
           Powered by{" "}
-          <a href="https://tap2buy.lk" className="underline hover:text-gray-500 transition-colors">
+          <a href="https://tap2buy.lk" className="font-medium hover:text-gray-500 underline decoration-gray-300 underline-offset-2 transition-colors">
             Tap2Buy
           </a>
         </div>

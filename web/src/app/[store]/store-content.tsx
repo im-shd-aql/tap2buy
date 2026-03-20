@@ -122,13 +122,15 @@ export default function StoreContent({
         {featuredProducts.length > 0 && !search && !activeCategory && (
           <section className="mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5" style={{ color: themeColor }} />
-              <h2 className="font-bold text-lg">Featured</h2>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${themeColor}15` }}>
+                <Sparkles className="w-4 h-4" style={{ color: themeColor }} />
+              </div>
+              <h2 className="font-bold text-lg tracking-tight">Featured</h2>
             </div>
-            <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+            <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
               <div className="flex gap-3" style={{ minWidth: "min-content" }}>
                 {featuredProducts.map((product) => (
-                  <div key={product.id} className="w-48 flex-shrink-0">
+                  <div key={product.id} className="w-48 flex-shrink-0 snap-start">
                     <ProductCard
                       product={product}
                       storeId={storeId}
@@ -149,16 +151,16 @@ export default function StoreContent({
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 {!search && !activeCategory && (
-                  <h2 className="font-bold text-lg">All Products</h2>
+                  <h2 className="font-bold text-lg tracking-tight">All Products</h2>
                 )}
                 {activeCategory && (
-                  <h2 className="font-bold text-lg">{activeCategory}</h2>
+                  <h2 className="font-bold text-lg tracking-tight">{activeCategory}</h2>
                 )}
                 {search && (
-                  <h2 className="font-bold text-lg truncate">Results</h2>
+                  <h2 className="font-bold text-lg tracking-tight truncate">Results</h2>
                 )}
               </div>
-              <span className="text-sm text-gray-400 tabular-nums flex-shrink-0">
+              <span className="text-xs text-gray-400 tabular-nums bg-gray-100 px-2.5 py-0.5 rounded-full flex-shrink-0">
                 {filtered.length} items
               </span>
             </div>
@@ -188,7 +190,7 @@ export default function StoreContent({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="appearance-none pl-7 pr-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border-0 focus:outline-none"
+                  className="appearance-none pl-7 pr-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200 focus:outline-none"
                 >
                   {sortOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -200,7 +202,7 @@ export default function StoreContent({
               </div>
 
               {/* View mode toggle */}
-              <div className="flex items-center bg-gray-100 rounded-full p-0.5">
+              <div className="flex items-center bg-gray-100 border border-gray-200/60 rounded-full p-0.5">
                 <button
                   onClick={() => handleViewMode("grid")}
                   className={`p-1.5 rounded-full transition-all duration-200 ${
@@ -244,7 +246,7 @@ export default function StoreContent({
             )}
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             {filtered.map((product) => (
               <ProductCard
                 key={product.id}

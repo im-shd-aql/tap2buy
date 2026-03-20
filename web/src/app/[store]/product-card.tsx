@@ -70,9 +70,9 @@ export default function ProductCard({
   return (
     <Link
       href={`/${storeSlug}/${product.id}`}
-      className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group"
+      className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_10px_25px_rgba(0,0,0,0.08)] ring-1 ring-gray-100 hover:ring-gray-200 transition-all duration-300 hover:-translate-y-1 group"
     >
-      <div className="aspect-square bg-gray-100 relative overflow-hidden">
+      <div className="aspect-square bg-gray-50 relative overflow-hidden">
         {product.images[0] ? (
           <Image
             src={product.images[0]}
@@ -95,7 +95,7 @@ export default function ProductCard({
         {/* Badge */}
         {badgeStyle && (
           <span
-            className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wide shadow-sm ${badgeStyle.bg} ${badgeStyle.text}`}
+            className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-md ${badgeStyle.bg} ${badgeStyle.text}`}
           >
             {badgeStyle.label}
           </span>
@@ -103,7 +103,7 @@ export default function ProductCard({
 
         {/* Discount badge */}
         {discount > 0 && !isOutOfStock && (
-          <span className="absolute top-2.5 right-2.5 bg-red-500 text-white px-2 py-1 rounded-lg text-[10px] font-bold shadow-sm">
+          <span className="absolute top-2.5 right-2.5 bg-red-500 text-white px-2 py-1 rounded-full text-[10px] font-bold tracking-wider shadow-md">
             -{discount}%
           </span>
         )}
@@ -113,7 +113,7 @@ export default function ProductCard({
           <button
             onClick={handleQuickAdd}
             className={`absolute bottom-2.5 right-2.5 w-10 h-10 rounded-full shadow-lg flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 active:scale-90 ${
-              added ? "bg-emerald-500 text-white" : "bg-white"
+              added ? "bg-emerald-500 text-white scale-110" : "bg-white/95 backdrop-blur-sm hover:bg-white"
             }`}
             style={added ? {} : { color: themeColor }}
           >
@@ -121,10 +121,10 @@ export default function ProductCard({
           </button>
         )}
       </div>
-      <div className="p-3 pb-3.5">
-        <p className="font-medium text-sm line-clamp-2 leading-snug min-h-[2.5rem]">{product.name}</p>
+      <div className="px-3 pt-2.5 pb-3">
+        <p className="font-medium text-[13px] text-gray-800 line-clamp-2 leading-snug min-h-[2.5rem]">{product.name}</p>
         <div className="flex items-baseline gap-1.5 mt-2">
-          <span className="font-bold text-base" style={{ color: themeColor }}>
+          <span className="font-bold text-[15px]" style={{ color: themeColor }}>
             LKR {Number(product.price).toLocaleString()}
           </span>
           {product.comparePrice && (

@@ -70,9 +70,9 @@ export default function ProductListCard({
   return (
     <Link
       href={`/${storeSlug}/${product.id}`}
-      className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex group"
+      className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.07)] ring-1 ring-gray-100 hover:ring-gray-200 transition-all duration-300 flex group"
     >
-      <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] bg-gray-100 relative overflow-hidden flex-shrink-0">
+      <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] bg-gray-50 relative overflow-hidden flex-shrink-0">
         {product.images[0] ? (
           <Image
             src={product.images[0]}
@@ -91,7 +91,7 @@ export default function ProductListCard({
         )}
         {badgeStyle && (
           <span
-            className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide ${badgeStyle.bg} ${badgeStyle.text}`}
+            className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider shadow-sm ${badgeStyle.bg} ${badgeStyle.text}`}
           >
             {badgeStyle.label}
           </span>
@@ -117,8 +117,8 @@ export default function ProductListCard({
         {!isOutOfStock && (
           <button
             onClick={handleQuickAdd}
-            className={`self-end mt-2 w-9 h-9 rounded-full shadow flex items-center justify-center transition-all duration-200 active:scale-90 ${
-              added ? "bg-emerald-500 text-white" : "bg-gray-100"
+            className={`self-end mt-2 w-9 h-9 rounded-full shadow-sm border border-gray-200 flex items-center justify-center transition-all duration-200 active:scale-90 ${
+              added ? "bg-emerald-500 text-white border-emerald-500 scale-110" : "bg-gray-50 hover:bg-gray-100"
             }`}
             style={added ? {} : { color: themeColor }}
           >

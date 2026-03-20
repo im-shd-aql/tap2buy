@@ -14,7 +14,7 @@ export default function SearchBar({
   themeColor: string;
 }) {
   return (
-    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md shadow-sm px-4 py-3">
+    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100/80 px-4 py-3">
       <div className="max-w-3xl mx-auto relative">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
@@ -22,7 +22,7 @@ export default function SearchBar({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Search products..."
-          className="w-full pl-11 pr-20 py-3 bg-gray-100 rounded-2xl text-sm transition-all duration-200 focus:outline-none focus:bg-white focus:shadow-md"
+          className="w-full pl-11 pr-20 py-3 bg-gray-100/80 rounded-2xl text-sm border border-transparent focus:border-gray-200 placeholder:text-gray-400 transition-all duration-200 focus:outline-none focus:bg-white focus:shadow-md"
           style={{
             // Use boxShadow for themed focus ring since focus:ring doesn't support dynamic colors
           }}
@@ -41,7 +41,7 @@ export default function SearchBar({
         {value && (
           <button
             onClick={() => onChange("")}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full transition-colors"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-200 hover:scale-110 rounded-full transition-all"
           >
             <X className="w-4 h-4 text-gray-400" />
           </button>

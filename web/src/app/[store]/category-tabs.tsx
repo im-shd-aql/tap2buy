@@ -18,8 +18,8 @@ export default function CategoryTabs({
   return (
     <div className="relative">
       {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none" />
       <div className="overflow-x-auto scrollbar-hide px-4 py-3">
         <div className="max-w-3xl mx-auto flex gap-2">
           {all.map((cat) => {
@@ -31,8 +31,8 @@ export default function CategoryTabs({
                 className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 active:scale-95"
                 style={
                   isActive
-                    ? { backgroundColor: themeColor, color: "white", boxShadow: `0 2px 8px ${themeColor}40` }
-                    : { backgroundColor: "transparent", color: "#6b7280", border: "1.5px solid #e5e7eb" }
+                    ? { backgroundColor: themeColor, color: "white", boxShadow: `0 3px 12px ${themeColor}35, 0 1px 3px ${themeColor}20` }
+                    : { backgroundColor: "#f9fafb", color: "#6b7280", border: "1.5px solid #e5e7eb" }
                 }
               >
                 {cat}
