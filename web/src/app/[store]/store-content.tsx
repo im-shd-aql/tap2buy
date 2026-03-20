@@ -166,7 +166,7 @@ export default function StoreContent({
             {/* Row 2: Sort + view toggle */}
             <div className="flex items-center justify-between gap-2">
               {/* Sort pills (desktop) */}
-              <div className="hidden sm:flex items-center gap-1.5">
+              <div className="hidden md:flex items-center gap-1.5">
                 {sortOptions.map((opt) => (
                   <button
                     key={opt.value}
@@ -184,7 +184,7 @@ export default function StoreContent({
               </div>
 
               {/* Sort dropdown (mobile) */}
-              <div className="sm:hidden relative">
+              <div className="md:hidden relative">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
