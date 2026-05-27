@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/lib/cart";
@@ -9,12 +8,10 @@ import { useCart } from "@/lib/cart";
 export default function StickyHeader({
   storeName,
   storeSlug,
-  logoUrl,
   themeColor,
 }: {
   storeName: string;
   storeSlug: string;
-  logoUrl: string | null;
   themeColor: string;
 }) {
   const [visible, setVisible] = useState(false);
@@ -48,17 +45,6 @@ export default function StickyHeader({
       >
         <div className="max-w-3xl mx-auto px-4 py-2.5 flex items-center justify-between">
           <Link href={`/${storeSlug}`} className="flex items-center gap-2.5 min-w-0">
-            {logoUrl && (
-              <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
-                <Image
-                  src={logoUrl}
-                  alt={storeName}
-                  fill
-                  sizes="32px"
-                  className="object-cover"
-                />
-              </div>
-            )}
             <span className="font-bold text-sm truncate">{storeName}</span>
           </Link>
           {itemCount > 0 && (

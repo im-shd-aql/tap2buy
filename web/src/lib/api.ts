@@ -23,6 +23,12 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<T> 
   });
 
   if (!res.ok) {
+    if (res.status === 401 && token && typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      document.cookie = "tap2buy_token=; path=/; max-age=0";
+      window.location.href = "/auth/login";
+      throw new Error("Session expired");
+    }
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || `Request failed: ${res.status}`);
   }

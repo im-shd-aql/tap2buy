@@ -21,6 +21,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function setAuthCookie(token: string) {
+  document.cookie = `tap2buy_token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+}
+
+function clearAuthCookie() {
+  document.cookie = "tap2buy_token=; path=/; max-age=0";
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -30,14 +38,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem("token");
       if (!stored) {
+        clearAuthCookie();
         setLoading(false);
         return;
       }
       setToken(stored);
       const data = await api.get<{ user: User }>("/api/auth/me", { token: stored });
       setUser(data.user);
+      setAuthCookie(stored);
     } catch {
       localStorage.removeItem("token");
+      clearAuthCookie();
       setToken(null);
     } finally {
       setLoading(false);
@@ -60,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     setToken(data.token);
     localStorage.setItem("token", data.token);
+    setAuthCookie(data.token);
   };
 
   const logout = async () => {
@@ -67,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
+    clearAuthCookie();
   };
 
   return (

@@ -148,7 +148,6 @@ export default async function StorePage({
       <StickyHeader
         storeName={store.name}
         storeSlug={store.slug}
-        logoUrl={store.logoUrl}
         themeColor={store.themeColor}
       />
       <BackToTop />
