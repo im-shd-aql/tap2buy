@@ -1,7 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { api } from "./api";
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
+} from "firebase/auth";
+import { auth } from "./firebase";
 
 interface User {
   id: string;
@@ -17,6 +23,12 @@ interface AuthContextType {
   login: (phone: string, code: string, name?: string) => Promise<void>;
   logout: () => Promise<void>;
   sendOtp: (phone: string) => Promise<void>;
+  // Firebase Phone Auth methods
+  sendFirebaseOtp: (phone: string, recaptchaContainer: string) => Promise<void>;
+  verifyFirebaseOtp: (code: string, name?: string) => Promise<void>;
+  confirmationResult: ConfirmationResult | null;
+  // Check if phone exists
+  checkPhone: (phone: string) => Promise<{ exists: boolean; hasStore: boolean }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -33,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -82,8 +96,109 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAuthCookie();
   };
 
+  // Firebase Phone Auth: Send OTP
+  const sendFirebaseOtp = async (phone: string, recaptchaContainer: string) => {
+    if (!auth) {
+      throw new Error("Firebase not initialized");
+    }
+
+    // Convert local format (0771234567) to international (+94771234567)
+    const internationalPhone = phone.startsWith("0")
+      ? "+94" + phone.slice(1)
+      : phone;
+
+    try {
+      // Clear existing reCAPTCHA verifier if any
+      if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      }
+
+      // Clear the container element
+      const container = document.getElementById(recaptchaContainer);
+      if (container) {
+        container.innerHTML = "";
+      }
+
+      // Initialize reCAPTCHA
+      const recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
+        size: "invisible",
+      });
+      recaptchaVerifierRef.current = recaptchaVerifier;
+
+      // Send OTP via Firebase
+      const result = await signInWithPhoneNumber(
+        auth,
+        internationalPhone,
+        recaptchaVerifier
+      );
+      setConfirmationResult(result);
+    } catch (error: any) {
+      console.error("Firebase OTP send failed:", error);
+      // Reset reCAPTCHA on error so user can retry
+      if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      }
+      const container = document.getElementById(recaptchaContainer);
+      if (container) {
+        container.innerHTML = "";
+      }
+      throw new Error(error.message || "Failed to send OTP");
+    }
+  };
+
+  // Firebase Phone Auth: Verify OTP
+  const verifyFirebaseOtp = async (code: string, name?: string) => {
+    if (!confirmationResult) {
+      throw new Error("No confirmation result found. Please request OTP first.");
+    }
+
+    try {
+      // Verify OTP with Firebase
+      const result = await confirmationResult.confirm(code);
+      const idToken = await result.user.getIdToken();
+
+      // Send Firebase ID token to backend
+      const data = await api.post<{ user: User; token: string }>(
+        "/api/auth/verify-firebase",
+        { idToken, name }
+      );
+
+      setUser(data.user);
+      setToken(data.token);
+      localStorage.setItem("token", data.token);
+      setAuthCookie(data.token);
+      setConfirmationResult(null);
+    } catch (error: any) {
+      console.error("Firebase OTP verification failed:", error);
+      throw new Error(error.message || "Invalid OTP code");
+    }
+  };
+
+  // Check if phone number has an account
+  const checkPhone = async (phone: string): Promise<{ exists: boolean; hasStore: boolean }> => {
+    return await api.post<{ exists: boolean; hasStore: boolean }>(
+      "/api/auth/check-phone",
+      { phone }
+    );
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, sendOtp }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        logout,
+        sendOtp,
+        sendFirebaseOtp,
+        verifyFirebaseOtp,
+        confirmationResult,
+        checkPhone,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

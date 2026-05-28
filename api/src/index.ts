@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { env } from "./config/env";
 import { errorHandler } from "./middleware/errorHandler";
+import { initializeFirebase } from "./config/firebase";
 import authRoutes from "./routes/auth";
 import storeRoutes from "./routes/stores";
 import productRoutes from "./routes/products";
@@ -11,6 +12,16 @@ import paymentRoutes from "./routes/payments";
 import walletRoutes from "./routes/wallet";
 import uploadRoutes from "./routes/upload";
 import dashboardRoutes from "./routes/dashboard";
+
+// Initialize Firebase
+if (env.otpMode === "production") {
+  try {
+    initializeFirebase();
+    console.log("✓ Firebase initialized successfully");
+  } catch (error) {
+    console.error("✗ Firebase initialization failed:", error);
+  }
+}
 
 const app = express();
 

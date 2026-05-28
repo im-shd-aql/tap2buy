@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -26,7 +26,7 @@ type Step = "phone" | "otp" | "store";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { sendOtp, login, token } = useAuth();
+  const { sendFirebaseOtp, confirmationResult, checkPhone } = useAuth();
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
@@ -37,16 +37,27 @@ export default function SignupPage() {
   const [themeColor, setThemeColor] = useState("#6366f1");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [firebaseIdToken, setFirebaseIdToken] = useState<string | null>(null);
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await sendOtp(phone);
+      // Check if phone already has an account
+      const phoneCheck = await checkPhone(phone);
+
+      if (phoneCheck.exists) {
+        setError("Account already exists with this phone number. Please login instead.");
+        setLoading(false);
+        return;
+      }
+
+      // Send OTP via Firebase
+      await sendFirebaseOtp(phone, "recaptcha-container");
       setStep("otp");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -57,10 +68,17 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
     try {
-      await login(phone, code, name);
+      if (!confirmationResult) {
+        throw new Error("No confirmation result found. Please request OTP first.");
+      }
+
+      // Verify OTP and get Firebase ID token for later
+      const result = await confirmationResult.confirm(code);
+      const idToken = await result.user.getIdToken();
+      setFirebaseIdToken(idToken);
       setStep("store");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Invalid OTP code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -71,14 +89,23 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
     try {
-      await api.post(
-        "/api/stores",
-        { name: storeName, category, themeColor },
-        { token: token! }
+      if (!firebaseIdToken) {
+        throw new Error("Phone verification not completed. Please go back and verify.");
+      }
+
+      // Create account with user details and store info
+      const response = await api.post<{ user: any; token: string }>(
+        "/api/auth/signup",
+        { idToken: firebaseIdToken, name, storeName, category, themeColor }
       );
+
+      // Store token
+      localStorage.setItem("token", response.token);
+      document.cookie = `tap2buy_token=${response.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to create account. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -133,6 +160,7 @@ export default function SignupPage() {
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
+            <div id="recaptcha-container"></div>
             <button
               type="submit"
               disabled={loading}

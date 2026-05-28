@@ -18,6 +18,9 @@ export const env = {
   notifyLkApiKey: process.env.NOTIFY_LK_API_KEY || "",
   notifyLkSenderId: process.env.NOTIFY_LK_SENDER_ID || "",
 
+  // Firebase
+  firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT || "",
+
   // Cloudflare R2
   r2AccountId: process.env.R2_ACCOUNT_ID || "",
   r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || "",

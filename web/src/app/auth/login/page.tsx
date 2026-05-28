@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { sendOtp, login } = useAuth();
+  const { sendFirebaseOtp, verifyFirebaseOtp, checkPhone } = useAuth();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -19,10 +19,20 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await sendOtp(phone);
+      // Check if phone number has an account
+      const phoneCheck = await checkPhone(phone);
+
+      if (!phoneCheck.exists) {
+        setError("No account found with this phone number. Please create your store first.");
+        setLoading(false);
+        return;
+      }
+
+      // Send OTP via Firebase
+      await sendFirebaseOtp(phone, "recaptcha-container");
       setStep("otp");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -33,10 +43,10 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(phone, code);
+      await verifyFirebaseOtp(code);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Invalid OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -59,18 +69,26 @@ export default function LoginPage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="0771234567"
+                pattern="0[0-9]{9}"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter your Sri Lankan phone number (10 digits starting with 0)
+              </p>
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
+            <div id="recaptcha-container"></div>
             <button
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium text-base hover:bg-indigo-700 disabled:opacity-50 active:scale-[0.98] transition-transform"
             >
-              {loading ? "Sending..." : "Send OTP"}
+              {loading ? "Sending..." : "Send OTP via SMS"}
             </button>
+            <p className="text-xs text-center text-gray-500">
+              You&apos;ll receive a free verification code via SMS
+            </p>
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
@@ -99,8 +117,12 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => setStep("phone")}
-              className="w-full py-3 text-gray-500 text-sm"
+              onClick={() => {
+                setStep("phone");
+                setCode("");
+                setError("");
+              }}
+              className="w-full py-3 text-gray-500 text-sm hover:text-gray-700"
             >
               Change phone number
             </button>
