@@ -2,9 +2,11 @@
 
 import { motion } from "framer-motion";
 import { useLang } from "@/hooks/useLang";
+import { useState } from "react";
 
 export default function Pricing() {
   const { t } = useLang();
+  const [expandedPlan, setExpandedPlan] = useState<number | null>(null);
 
   const plans = [
     {
@@ -19,6 +21,12 @@ export default function Pricing() {
         t("pricing.freeFeature3"),
         t("pricing.freeFeature4"),
         t("pricing.freeFeature5"),
+        t("pricing.freeFeature6"),
+        t("pricing.freeFeature7"),
+        t("pricing.freeFeature8"),
+        t("pricing.freeFeature9"),
+        t("pricing.freeFeature10"),
+        t("pricing.freeFeature11"),
       ],
       cta: t("pricing.freeCta"),
       popular: false,
@@ -35,6 +43,20 @@ export default function Pricing() {
         t("pricing.proFeature3"),
         t("pricing.proFeature4"),
         t("pricing.proFeature5"),
+        t("pricing.proFeature6"),
+        t("pricing.proFeature7"),
+        t("pricing.proFeature8"),
+        t("pricing.proFeature9"),
+        t("pricing.proFeature10"),
+        t("pricing.proFeature11"),
+        t("pricing.proFeature12"),
+        t("pricing.proFeature13"),
+        t("pricing.proFeature14"),
+        t("pricing.proFeature15"),
+        t("pricing.proFeature16"),
+        t("pricing.proFeature17"),
+        t("pricing.proFeature18"),
+        t("pricing.proFeature19"),
       ],
       cta: t("pricing.proCta"),
       popular: true,
@@ -51,6 +73,21 @@ export default function Pricing() {
         t("pricing.businessFeature3"),
         t("pricing.businessFeature4"),
         t("pricing.businessFeature5"),
+        t("pricing.businessFeature6"),
+        t("pricing.businessFeature7"),
+        t("pricing.businessFeature8"),
+        t("pricing.businessFeature9"),
+        t("pricing.businessFeature10"),
+        t("pricing.businessFeature11"),
+        t("pricing.businessFeature12"),
+        t("pricing.businessFeature13"),
+        t("pricing.businessFeature14"),
+        t("pricing.businessFeature15"),
+        t("pricing.businessFeature16"),
+        t("pricing.businessFeature17"),
+        t("pricing.businessFeature18"),
+        t("pricing.businessFeature19"),
+        t("pricing.businessFeature20"),
       ],
       cta: t("pricing.businessCta"),
       popular: false,
@@ -111,7 +148,7 @@ export default function Pricing() {
               <p className="mt-2 text-sm font-medium text-primary">{plan.fee}</p>
 
               <ul className="mt-6 space-y-3">
-                {plan.features.map((feature, j) => (
+                {plan.features.slice(0, expandedPlan === i ? undefined : 5).map((feature, j) => (
                   <li key={j} className="flex items-center gap-2 text-sm text-dark">
                     <svg className="h-4 w-4 flex-shrink-0 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -120,6 +157,29 @@ export default function Pricing() {
                   </li>
                 ))}
               </ul>
+
+              {plan.features.length > 5 && (
+                <button
+                  onClick={() => setExpandedPlan(expandedPlan === i ? null : i)}
+                  className="mt-4 text-sm font-medium text-primary hover:underline flex items-center gap-1"
+                >
+                  {expandedPlan === i ? (
+                    <>
+                      {t("pricing.seeLess")}
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      {t("pricing.seeAll")} ({plan.features.length - 5} more)
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              )}
 
               <a
                 href={`https://wa.me/94XXXXXXXXX?text=Hi!%20I%20want%20to%20sign%20up%20for%20the%20${encodeURIComponent(plan.name)}%20plan`}

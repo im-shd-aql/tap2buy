@@ -17,11 +17,11 @@ interface Product {
   badge: string | null;
 }
 
-const BADGE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  new: { bg: "bg-emerald-500", text: "text-white", label: "NEW" },
-  sale: { bg: "bg-red-500", text: "text-white", label: "SALE" },
-  limited: { bg: "bg-amber-500", text: "text-white", label: "LIMITED" },
-  soldout: { bg: "bg-gray-800", text: "text-white", label: "SOLD OUT" },
+const BADGE_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  new: { bg: "bg-emerald-600/10", text: "text-emerald-700", border: "border border-emerald-600/20", label: "NEW" },
+  sale: { bg: "bg-rose-600/10", text: "text-rose-700", border: "border border-rose-600/20", label: "SALE" },
+  limited: { bg: "bg-amber-600/10", text: "text-amber-700", border: "border border-amber-600/20", label: "LIMITED" },
+  soldout: { bg: "bg-stone-200", text: "text-stone-600", border: "border border-stone-300", label: "SOLD OUT" },
 };
 
 export default function ProductListCard({
@@ -70,9 +70,9 @@ export default function ProductListCard({
   return (
     <Link
       href={`/${storeSlug}/${product.id}`}
-      className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.07)] ring-1 ring-gray-100 hover:ring-gray-200 transition-all duration-300 flex group"
+      className="bg-white rounded-xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] ring-1 ring-black/5 hover:ring-black/10 transition-all duration-300 flex group"
     >
-      <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] bg-gray-50 relative overflow-hidden flex-shrink-0">
+      <div className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] bg-stone-50 relative overflow-hidden flex-shrink-0">
         {product.images[0] ? (
           <Image
             src={product.images[0]}
@@ -82,7 +82,7 @@ export default function ProductListCard({
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">
+          <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs">
             No image
           </div>
         )}
@@ -91,7 +91,7 @@ export default function ProductListCard({
         )}
         {badgeStyle && (
           <span
-            className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider shadow-sm ${badgeStyle.bg} ${badgeStyle.text}`}
+            className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-[0.05em] uppercase ${badgeStyle.bg} ${badgeStyle.text} ${badgeStyle.border}`}
           >
             {badgeStyle.label}
           </span>
@@ -99,26 +99,26 @@ export default function ProductListCard({
       </div>
       <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
         <div>
-          <p className="font-medium text-sm line-clamp-2 leading-snug">{product.name}</p>
+          <p className="font-medium text-base text-neutral-900 line-clamp-2 leading-relaxed">{product.name}</p>
           <div className="flex items-baseline gap-1.5 mt-1.5">
-            <span className="font-bold text-base" style={{ color: themeColor }}>
+            <span className="font-bold text-lg" style={{ color: themeColor }}>
               LKR {Number(product.price).toLocaleString()}
             </span>
             {product.comparePrice && (
-              <span className="text-xs text-gray-400 line-through">
+              <span className="text-xs text-stone-400 line-through">
                 {Number(product.comparePrice).toLocaleString()}
               </span>
             )}
             {discount > 0 && !isOutOfStock && (
-              <span className="text-[10px] font-bold text-red-500">-{discount}%</span>
+              <span className="text-[11px] font-semibold text-rose-600">-{discount}%</span>
             )}
           </div>
         </div>
         {!isOutOfStock && (
           <button
             onClick={handleQuickAdd}
-            className={`self-end mt-2 w-9 h-9 rounded-full shadow-sm border border-gray-200 flex items-center justify-center transition-all duration-200 active:scale-90 ${
-              added ? "bg-emerald-500 text-white border-emerald-500 scale-110" : "bg-gray-50 hover:bg-gray-100"
+            className={`self-end mt-2 w-9 h-9 rounded-lg shadow-sm border flex items-center justify-center transition-all duration-200 active:scale-90 ${
+              added ? "bg-emerald-500 text-white border-emerald-500 scale-110" : "bg-white border-black/5 hover:border-black/10"
             }`}
             style={added ? {} : { color: themeColor }}
           >

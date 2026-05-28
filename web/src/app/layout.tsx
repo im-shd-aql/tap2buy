@@ -23,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased bg-gray-50 text-gray-900">
+      <body className="antialiased bg-stone-50 text-neutral-900">
         <AuthProvider>
           <CartProvider>
             <ToastProvider>{children}</ToastProvider>

@@ -117,15 +117,15 @@ export default function StoreContent({
         />
       )}
 
-      <main className="max-w-3xl mx-auto px-4 py-4">
+      <main className="max-w-3xl mx-auto px-4 py-8">
         {/* Featured Products */}
         {featuredProducts.length > 0 && !search && !activeCategory && (
-          <section className="mb-8">
+          <section className="mb-12">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${themeColor}15` }}>
                 <Sparkles className="w-4 h-4" style={{ color: themeColor }} />
               </div>
-              <h2 className="font-bold text-lg tracking-tight">Featured</h2>
+              <h2 className="font-serif text-xl font-semibold tracking-tight text-neutral-900">Featured</h2>
             </div>
             <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
               <div className="flex gap-3" style={{ minWidth: "min-content" }}>
@@ -151,16 +151,16 @@ export default function StoreContent({
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 {!search && !activeCategory && (
-                  <h2 className="font-bold text-lg tracking-tight">All Products</h2>
+                  <h2 className="font-serif text-xl font-semibold tracking-tight text-neutral-900">All Products</h2>
                 )}
                 {activeCategory && (
-                  <h2 className="font-bold text-lg tracking-tight">{activeCategory}</h2>
+                  <h2 className="font-serif text-xl font-semibold tracking-tight text-neutral-900">{activeCategory}</h2>
                 )}
                 {search && (
-                  <h2 className="font-bold text-lg tracking-tight truncate">Results</h2>
+                  <h2 className="font-serif text-xl font-semibold tracking-tight text-neutral-900 truncate">Results</h2>
                 )}
               </div>
-              <span className="text-xs text-gray-400 tabular-nums bg-gray-100 px-2.5 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-xs text-stone-400 tabular-nums bg-stone-100 px-2.5 py-0.5 rounded-full flex-shrink-0">
                 {filtered.length} items
               </span>
             </div>
@@ -176,7 +176,7 @@ export default function StoreContent({
                     className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${
                       sortBy === opt.value
                         ? "text-white shadow-sm"
-                        : "text-gray-500 bg-gray-100 hover:bg-gray-200"
+                        : "text-stone-500 bg-stone-100 hover:bg-stone-200"
                     }`}
                     style={sortBy === opt.value ? { backgroundColor: themeColor } : {}}
                   >
@@ -190,7 +190,7 @@ export default function StoreContent({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="appearance-none pl-7 pr-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200 focus:outline-none"
+                  className="appearance-none pl-7 pr-3 py-1.5 text-xs font-medium rounded-full bg-stone-100 text-stone-600 border border-stone-200 focus:outline-none"
                 >
                   {sortOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -198,15 +198,15 @@ export default function StoreContent({
                     </option>
                   ))}
                 </select>
-                <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-400 pointer-events-none" />
               </div>
 
               {/* View mode toggle */}
-              <div className="flex items-center bg-gray-100 border border-gray-200/60 rounded-full p-0.5">
+              <div className="flex items-center bg-stone-100 border border-stone-200/60 rounded-full p-0.5">
                 <button
                   onClick={() => handleViewMode("grid")}
                   className={`p-1.5 rounded-full transition-all duration-200 ${
-                    viewMode === "grid" ? "bg-white shadow-sm text-gray-900" : "text-gray-400"
+                    viewMode === "grid" ? "bg-white shadow-sm text-neutral-900" : "text-stone-400"
                   }`}
                 >
                   <LayoutGrid className="w-4 h-4" />
@@ -214,7 +214,7 @@ export default function StoreContent({
                 <button
                   onClick={() => handleViewMode("list")}
                   className={`p-1.5 rounded-full transition-all duration-200 ${
-                    viewMode === "list" ? "bg-white shadow-sm text-gray-900" : "text-gray-400"
+                    viewMode === "list" ? "bg-white shadow-sm text-neutral-900" : "text-stone-400"
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -227,10 +227,10 @@ export default function StoreContent({
         {/* Product Grid / List */}
         {filtered.length === 0 ? (
           <div className="text-center py-16 animate-fade-up">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-              <Package className="w-10 h-10 text-gray-300" />
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-stone-100 flex items-center justify-center">
+              <Package className="w-10 h-10 text-stone-300" />
             </div>
-            <p className="text-gray-500 font-medium">
+            <p className="text-stone-600 font-medium">
               {search
                 ? `No products matching "${search}"`
                 : "No products available yet"}
@@ -246,7 +246,7 @@ export default function StoreContent({
             )}
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
             {filtered.map((product) => (
               <ProductCard
                 key={product.id}
