@@ -13,6 +13,7 @@ import paymentRoutes from "./routes/payments";
 import walletRoutes from "./routes/wallet";
 import uploadRoutes from "./routes/upload";
 import dashboardRoutes from "./routes/dashboard";
+import reviewRoutes from "./routes/reviews";
 
 // Initialize Firebase
 if (env.otpMode === "production") {
@@ -44,6 +45,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Health check
 app.get("/api/health", (_req, res) => {

@@ -4,6 +4,8 @@ import AddToCartButton from "./add-to-cart";
 import ImageGallery from "./image-gallery";
 import ShareSheet from "./share-sheet";
 import RecentlyViewedTracker from "./recently-viewed-tracker";
+import ViewTracker from "./view-tracker";
+import ReviewsSection from "./reviews-section";
 import VariantSection from "./variant-section";
 import VariantSectionNew from "./variant-section-new";
 import Link from "next/link";
@@ -143,6 +145,7 @@ export default async function ProductPage({
           image: product.images[0] || "",
         }}
       />
+      <ViewTracker storeId={store.id} productId={product.id} />
       {/* Back nav */}
       <div className="bg-white sticky top-0 z-30 border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -285,6 +288,11 @@ export default async function ProductPage({
             </a>
           </div>
         )}
+      </div>
+
+      {/* Reviews */}
+      <div className="max-w-3xl mx-auto px-4 mb-4">
+        <ReviewsSection productId={product.id} themeColor={store.themeColor} />
       </div>
 
       {/* You might also like */}

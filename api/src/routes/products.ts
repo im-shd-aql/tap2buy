@@ -188,6 +188,90 @@ router.get(
   }
 );
 
+// POST /api/stores/:storeId/products/:id/view — Increment view count (public)
+router.post(
+  "/stores/:storeId/products/:id/view",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const productId = param(req, "id");
+      const storeId = param(req, "storeId");
+
+      await prisma.product.updateMany({
+        where: { id: productId, storeId },
+        data: { views: { increment: 1 } },
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /api/stores/:storeId/products/analytics — Get product analytics (seller only)
+router.get(
+  "/stores/:storeId/analytics",
+  requireAuth,
+  requireSeller,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const storeId = param(req, "storeId");
+      await verifyStoreOwnership(storeId, req.user!.id);
+
+      // Get products with view counts and calculate sales from orders
+      const products = await prisma.product.findMany({
+        where: { storeId },
+        include: {
+          orderItems: {
+            include: {
+              order: {
+                select: { orderStatus: true, total: true },
+              },
+            },
+          },
+        },
+      });
+
+      // Calculate analytics for each product
+      const analytics = products.map((product) => {
+        const sales = product.orderItems.reduce((sum, item) => {
+          // Only count confirmed/shipped/delivered orders
+          if (["confirmed", "shipped", "delivered"].includes(item.order.orderStatus)) {
+            return sum + item.quantity;
+          }
+          return sum;
+        }, 0);
+
+        const revenue = product.orderItems.reduce((sum, item) => {
+          if (["confirmed", "shipped", "delivered"].includes(item.order.orderStatus)) {
+            return sum + Number(item.productPrice) * item.quantity;
+          }
+          return sum;
+        }, 0);
+
+        const conversionRate = product.views > 0 ? (sales / product.views) * 100 : 0;
+
+        return {
+          id: product.id,
+          name: product.name,
+          views: product.views,
+          sales,
+          revenue,
+          conversionRate: Math.round(conversionRate * 100) / 100,
+          image: product.images[0] || null,
+        };
+      });
+
+      // Sort by revenue (highest first)
+      analytics.sort((a, b) => b.revenue - a.revenue);
+
+      res.json({ analytics });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // DELETE /api/stores/:storeId/products/:id
 router.delete(
   "/stores/:storeId/products/:id",

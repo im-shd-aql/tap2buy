@@ -11,6 +11,7 @@ import {
   Package,
   Users,
   Store,
+  TrendingUp,
 } from "lucide-react";
 
 function BottomTabNav() {
@@ -34,6 +35,7 @@ function BottomTabNav() {
     { href: "/dashboard", label: "Home", icon: Home, exact: true },
     { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart, badge: pendingCount },
     { href: "/dashboard/products", label: "Products", icon: Package },
+    { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
     { href: "/dashboard/store", label: "Store", icon: Store },
   ];
 

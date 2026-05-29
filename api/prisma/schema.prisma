@@ -126,12 +126,14 @@ model Product {
   badge        String?
   isActive     Boolean     @default(true) @map("is_active")
   sortOrder    Int         @default(0) @map("sort_order")
+  views        Int         @default(0) // Track product page views
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
   store          Store            @relation(fields: [storeId], references: [id])
   orderItems     OrderItem[]
   productVariants ProductVariant[]
+  reviews        Review[]
 
   @@index([storeId])
   @@map("products")
@@ -185,6 +187,7 @@ model Order {
 
   store             Store         @relation(fields: [storeId], references: [id])
   items             OrderItem[]
+  reviews           Review[]
 
   @@index([storeId])
   @@index([orderNumber])
@@ -207,6 +210,27 @@ model OrderItem {
 
   @@index([variantId])
   @@map("order_items")
+}
+
+model Review {
+  id                 String   @id @default(uuid())
+  productId          String   @map("product_id")
+  orderId            String?  @map("order_id") // Optional - to verify purchase
+  buyerName          String   @map("buyer_name")
+  buyerPhone         String?  @map("buyer_phone")
+  rating             Int      // 1-5 stars
+  comment            String?  @db.Text
+  isVerifiedPurchase Boolean  @default(false) @map("is_verified_purchase")
+  isApproved         Boolean  @default(false) @map("is_approved") // Moderation
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@index([productId])
+  @@index([orderId])
+  @@map("reviews")
 }
 
 model Wallet {
