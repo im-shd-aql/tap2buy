@@ -16,30 +16,25 @@ export default function CategoryTabs({
   const all = ["All", ...categories];
 
   return (
-    <div className="relative">
-      {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-stone-50 to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-stone-50 to-transparent z-10 pointer-events-none" />
-      <div className="overflow-x-auto scrollbar-hide px-4 py-3">
-        <div className="max-w-3xl mx-auto flex gap-2">
-          {all.map((cat) => {
-            const isActive = cat === "All" ? active === "" : active === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => onChange(cat === "All" ? "" : cat)}
-                className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 active:scale-95"
-                style={
-                  isActive
-                    ? { backgroundColor: themeColor, color: "white", boxShadow: `0 4px 16px ${themeColor}15, 0 2px 4px ${themeColor}10` }
-                    : { backgroundColor: "#fafaf9", color: "#78716c", border: "1.5px solid #e7e5e4" }
-                }
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
+    <div className="overflow-x-auto scrollbar-hide px-4 py-2">
+      <div className="max-w-3xl mx-auto flex gap-2">
+        {all.map((cat) => {
+          const isActive = cat === "All" ? active === "" : active === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => onChange(cat === "All" ? "" : cat)}
+              className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 active:scale-95"
+              style={
+                isActive
+                  ? { backgroundColor: themeColor, color: "white" }
+                  : { backgroundColor: "#f3f4f6", color: "#6b7280" }
+              }
+            >
+              {cat}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

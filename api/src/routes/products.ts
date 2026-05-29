@@ -24,6 +24,7 @@ const productSchema = z.object({
   comparePrice: z.number().positive().optional(),
   images: z.array(z.string()).default([]),
   variants: variantsSchema,
+  hasVariants: z.boolean().optional(),
   stock: z.number().int().min(0).optional().nullable(),
   category: z.string().max(100).optional().nullable(),
   isFeatured: z.boolean().optional(),
@@ -60,6 +61,7 @@ router.post(
           comparePrice: data.comparePrice,
           images: data.images,
           variants: data.variants === null ? Prisma.JsonNull : data.variants ?? undefined,
+          hasVariants: data.hasVariants ?? false,
           stock: data.stock ?? undefined,
           category: data.category ?? undefined,
           isFeatured: data.isFeatured ?? false,
@@ -84,6 +86,12 @@ router.get(
       const storeId = param(req, "storeId");
       const products = await prisma.product.findMany({
         where: { storeId, isActive: true },
+        include: {
+          productVariants: {
+            where: { isActive: true },
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          },
+        },
         orderBy: { sortOrder: "asc" },
       });
 
@@ -103,6 +111,12 @@ router.get(
         where: {
           id: param(req, "id"),
           storeId: param(req, "storeId"),
+        },
+        include: {
+          productVariants: {
+            where: { isActive: true },
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          },
         },
       });
 

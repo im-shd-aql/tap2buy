@@ -18,14 +18,14 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
-        <KillerStats />
-        <StorePreview />
         <Problem />
+        <StorePreview />
+        <KillerStats />
         <HowItWorks />
         <Features />
+        <Testimonials />
         <Comparison />
         <Pricing />
-        <Testimonials />
         <FAQ />
         <FinalCTA />
       </main>

@@ -7,16 +7,16 @@ const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito" });
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-async function getStoreFontStyle(slug: string): Promise<string> {
+async function getStoreConfig(slug: string): Promise<{ fontStyle: string; themeColor: string }> {
   try {
     const res = await fetch(`${API_URL}/api/stores/${slug}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return "modern";
+    if (!res.ok) return { fontStyle: "modern", themeColor: "#6366f1" };
     const { store } = await res.json();
-    return store.fontStyle || "modern";
+    return { fontStyle: store.fontStyle || "modern", themeColor: store.themeColor || "#6366f1" };
   } catch {
-    return "modern";
+    return { fontStyle: "modern", themeColor: "#6366f1" };
   }
 }
 
@@ -34,12 +34,13 @@ export default async function StoreLayout({
   params: Promise<{ store: string }>;
 }) {
   const { store: slug } = await params;
-  const fontStyle = await getStoreFontStyle(slug);
+  const { fontStyle, themeColor } = await getStoreConfig(slug);
   const fontClass = FONT_CLASS_MAP[fontStyle] || "font-sans";
 
   return (
     <div
       className={`${inter.variable} ${playfair.variable} ${sourceSans.variable} ${nunito.variable} ${fontClass}`}
+      style={{ "--store-theme": themeColor } as React.CSSProperties}
     >
       {children}
     </div>

@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Package, Sparkles, LayoutGrid, List, ArrowUpDown } from "lucide-react";
+import { useState, useMemo, useRef, useCallback } from "react";
+import { Package, Sparkles, ArrowUpDown } from "lucide-react";
 import SearchBar from "./search-bar";
 import CategoryTabs from "./category-tabs";
 import ProductCard from "./product-card";
-import ProductListCard from "./product-list-card";
 import RecentlyViewed from "./recently-viewed";
 
 type SortOption = "default" | "price-asc" | "price-desc";
@@ -20,6 +19,7 @@ interface Product {
   category: string | null;
   isFeatured: boolean;
   badge: string | null;
+  hasVariants?: boolean;
 }
 
 export default function StoreContent({
@@ -37,7 +37,6 @@ export default function StoreContent({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("default");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleSearch = useCallback((value: string) => {
@@ -45,21 +44,6 @@ export default function StoreContent({
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => setDebouncedSearch(value), 200);
   }, []);
-
-  // Restore view mode from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`tap2buy_view_${storeSlug}`);
-      if (saved === "list" || saved === "grid") setViewMode(saved);
-    } catch {}
-  }, [storeSlug]);
-
-  function handleViewMode(mode: "grid" | "list") {
-    setViewMode(mode);
-    try {
-      localStorage.setItem(`tap2buy_view_${storeSlug}`, mode);
-    } catch {}
-  }
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -117,20 +101,20 @@ export default function StoreContent({
         />
       )}
 
-      <main className="max-w-3xl mx-auto px-4 py-8">
+      <main className="max-w-3xl mx-auto px-4 py-6">
         {/* Featured Products */}
         {featuredProducts.length > 0 && !search && !activeCategory && (
-          <section className="mb-12">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${themeColor}15` }}>
-                <Sparkles className="w-4 h-4" style={{ color: themeColor }} />
+          <section className="mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${themeColor}15` }}>
+                <Sparkles className="w-3.5 h-3.5" style={{ color: themeColor }} />
               </div>
-              <h2 className="font-serif text-xl font-semibold tracking-tight text-neutral-900">Featured</h2>
+              <h2 className="text-base font-semibold tracking-tight text-gray-900">Featured</h2>
             </div>
             <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
               <div className="flex gap-3" style={{ minWidth: "min-content" }}>
                 {featuredProducts.map((product) => (
-                  <div key={product.id} className="w-48 flex-shrink-0 snap-start">
+                  <div key={product.id} className="w-44 flex-shrink-0 snap-start">
                     <ProductCard
                       product={product}
                       storeId={storeId}
@@ -144,93 +128,51 @@ export default function StoreContent({
           </section>
         )}
 
-        {/* Product count header + sort + view toggle */}
+        {/* Product count header + sort */}
         {products.length > 0 && (
-          <div className="mb-4 space-y-2">
-            {/* Row 1: Title + item count */}
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                {!search && !activeCategory && (
-                  <h2 className="font-serif text-xl font-semibold tracking-tight text-neutral-900">All Products</h2>
-                )}
-                {activeCategory && (
-                  <h2 className="font-serif text-xl font-semibold tracking-tight text-neutral-900">{activeCategory}</h2>
-                )}
-                {search && (
-                  <h2 className="font-serif text-xl font-semibold tracking-tight text-neutral-900 truncate">Results</h2>
-                )}
-              </div>
-              <span className="text-xs text-stone-400 tabular-nums bg-stone-100 px-2.5 py-0.5 rounded-full flex-shrink-0">
-                {filtered.length} items
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              {!search && !activeCategory && (
+                <h2 className="text-base font-semibold tracking-tight text-gray-900">All Products</h2>
+              )}
+              {activeCategory && (
+                <h2 className="text-base font-semibold tracking-tight text-gray-900">{activeCategory}</h2>
+              )}
+              {search && (
+                <h2 className="text-base font-semibold tracking-tight text-gray-900 truncate">Results</h2>
+              )}
+              <span className="text-xs text-gray-400 tabular-nums bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                {filtered.length}
               </span>
             </div>
 
-            {/* Row 2: Sort + view toggle */}
-            <div className="flex items-center justify-between gap-2">
-              {/* Sort pills (desktop) */}
-              <div className="hidden md:flex items-center gap-1.5">
-                {sortOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSortBy(opt.value)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${
-                      sortBy === opt.value
-                        ? "text-white shadow-sm"
-                        : "text-stone-500 bg-stone-100 hover:bg-stone-200"
-                    }`}
-                    style={sortBy === opt.value ? { backgroundColor: themeColor } : {}}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Sort dropdown (mobile) */}
-              <div className="md:hidden relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="appearance-none pl-7 pr-3 py-1.5 text-xs font-medium rounded-full bg-stone-100 text-stone-600 border border-stone-200 focus:outline-none"
-                >
-                  {sortOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-400 pointer-events-none" />
-              </div>
-
-              {/* View mode toggle */}
-              <div className="flex items-center bg-stone-100 border border-stone-200/60 rounded-full p-0.5">
+            {/* Sort pills (desktop only) */}
+            <div className="hidden md:flex items-center gap-1.5">
+              {sortOptions.map((opt) => (
                 <button
-                  onClick={() => handleViewMode("grid")}
-                  className={`p-1.5 rounded-full transition-all duration-200 ${
-                    viewMode === "grid" ? "bg-white shadow-sm text-neutral-900" : "text-stone-400"
+                  key={opt.value}
+                  onClick={() => setSortBy(opt.value)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${
+                    sortBy === opt.value
+                      ? "text-white shadow-sm"
+                      : "text-gray-500 bg-gray-100 hover:bg-gray-200"
                   }`}
+                  style={sortBy === opt.value ? { backgroundColor: themeColor } : {}}
                 >
-                  <LayoutGrid className="w-4 h-4" />
+                  {opt.label}
                 </button>
-                <button
-                  onClick={() => handleViewMode("list")}
-                  className={`p-1.5 rounded-full transition-all duration-200 ${
-                    viewMode === "list" ? "bg-white shadow-sm text-neutral-900" : "text-stone-400"
-                  }`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Product Grid / List */}
+        {/* Product Grid */}
         {filtered.length === 0 ? (
           <div className="text-center py-16 animate-fade-up">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-stone-100 flex items-center justify-center">
-              <Package className="w-10 h-10 text-stone-300" />
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+              <Package className="w-10 h-10 text-gray-300" />
             </div>
-            <p className="text-stone-600 font-medium">
+            <p className="text-gray-600 font-medium">
               {search
                 ? `No products matching "${search}"`
                 : "No products available yet"}
@@ -245,22 +187,10 @@ export default function StoreContent({
               </button>
             )}
           </div>
-        ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             {filtered.map((product) => (
               <ProductCard
-                key={product.id}
-                product={product}
-                storeId={storeId}
-                storeSlug={storeSlug}
-                themeColor={themeColor}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {filtered.map((product) => (
-              <ProductListCard
                 key={product.id}
                 product={product}
                 storeId={storeId}

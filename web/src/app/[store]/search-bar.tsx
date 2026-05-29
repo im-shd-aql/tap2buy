@@ -14,27 +14,27 @@ export default function SearchBar({
   themeColor: string;
 }) {
   return (
-    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md shadow-sm border-b border-stone-100/80 px-4 py-3">
+    <div className="sticky top-0 z-20 bg-white px-4 py-2.5">
       <div className="max-w-3xl mx-auto relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Search products..."
-          className="w-full pl-11 pr-20 py-3 bg-white rounded-xl text-sm border border-stone-200 focus:border-stone-300 placeholder:text-stone-400 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-stone-100"
+          className="w-full pl-10 pr-16 py-2.5 bg-gray-50 rounded-full text-sm placeholder:text-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:bg-white"
         />
         {value && resultCount !== undefined && (
-          <span className="absolute right-12 top-1/2 -translate-y-1/2 text-xs text-stone-400 tabular-nums">
+          <span className="absolute right-10 top-1/2 -translate-y-1/2 text-xs text-gray-400 tabular-nums">
             {resultCount} found
           </span>
         )}
         {value && (
           <button
             onClick={() => onChange("")}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 hover:bg-stone-200 hover:scale-110 rounded-full transition-all"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full transition-all"
           >
-            <X className="w-4 h-4 text-stone-400" />
+            <X className="w-3.5 h-3.5 text-gray-400" />
           </button>
         )}
       </div>

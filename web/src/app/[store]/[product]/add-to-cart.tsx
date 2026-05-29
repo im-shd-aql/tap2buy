@@ -17,7 +17,8 @@ interface Props {
   };
   outOfStock: boolean;
   themeColor: string;
-  variant?: Record<string, string>;
+  variantId?: string; // New: ID of selected ProductVariant
+  variant?: Record<string, string>; // Legacy: variant attributes
   variantRequired?: boolean;
 }
 
@@ -27,6 +28,7 @@ export default function AddToCartButton({
   product,
   outOfStock,
   themeColor,
+  variantId,
   variant,
   variantRequired,
 }: Props) {
@@ -43,6 +45,7 @@ export default function AddToCartButton({
       name: product.name,
       price: product.price,
       image: product.image,
+      ...(variantId ? { variantId } : {}),
       ...(variant ? { variant } : {}),
     }, quantity);
     toast(`Added ${quantity > 1 ? `${quantity}x ` : ""}"${product.name}" to cart`, `/${storeSlug}/cart`);

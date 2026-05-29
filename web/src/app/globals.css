@@ -151,3 +151,58 @@ select {
 .animate-card-in {
   animation: card-in 0.4s ease-out both;
 }
+
+/* Onboarding step transitions */
+@keyframes step-in {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes step-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-40px); }
+}
+.animate-step-in {
+  animation: step-in 0.35s ease-out forwards;
+}
+.animate-step-out {
+  animation: step-out 0.25s ease-in forwards;
+}
+
+/* Celebrate bounce */
+@keyframes celebrate-bounce {
+  0% { opacity: 0; transform: scale(0.8); }
+  60% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-celebrate {
+  animation: celebrate-bounce 0.5s ease-out forwards;
+}
+
+/* Gradient shift for logo placeholder */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Slide up from bottom */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+/* Pulse border for important sections */
+@keyframes pulse-border {
+  0%, 100% { border-color: rgb(251 191 36 / 0.5); }
+  50% { border-color: rgb(251 191 36 / 1); }
+}
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}

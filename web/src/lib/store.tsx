@@ -21,6 +21,7 @@ interface Store {
   whatsappNumber: string | null;
   fontStyle: string | null;
   isActive: boolean;
+  createdAt: string;
 }
 
 interface StoreContextType {

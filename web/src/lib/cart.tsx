@@ -4,19 +4,20 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 
 export interface CartItem {
   productId: string;
+  variantId?: string; // New: ProductVariant ID
   name: string;
   price: number;
   image: string;
   quantity: number;
-  variant?: Record<string, string>;
+  variant?: Record<string, string>; // Legacy: variant attributes
 }
 
 interface CartContextType {
   items: CartItem[];
   storeId: string | null;
   addItem: (storeId: string, item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (productId: string, variant?: Record<string, string>) => void;
-  updateQuantity: (productId: string, quantity: number, variant?: Record<string, string>) => void;
+  removeItem: (productId: string, variantId?: string, variant?: Record<string, string>) => void;
+  updateQuantity: (productId: string, quantity: number, variantId?: string, variant?: Record<string, string>) => void;
   clearCart: () => void;
   subtotal: number;
   itemCount: number;
@@ -32,6 +33,29 @@ function getStoredCart(): { storeId: string | null; items: CartItem[] } {
   } catch {
     return { storeId: null, items: [] };
   }
+}
+
+// Helper to create a consistent variant key for comparison
+function getVariantKey(variant?: Record<string, string>): string {
+  if (!variant || Object.keys(variant).length === 0) return "";
+  return JSON.stringify(Object.entries(variant).sort());
+}
+
+// Helper to check if two items match (same product + variant)
+function itemsMatch(
+  productId1: string,
+  variantId1: string | undefined,
+  variant1: Record<string, string> | undefined,
+  productId2: string,
+  variantId2: string | undefined,
+  variant2: Record<string, string> | undefined
+): boolean {
+  // If both have variantIds, compare those (new system)
+  if (variantId1 && variantId2) {
+    return variantId1 === variantId2;
+  }
+  // Otherwise fall back to product + variant attributes (legacy system)
+  return productId1 === productId2 && getVariantKey(variant1) === getVariantKey(variant2);
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -51,52 +75,63 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addItem = useCallback((newStoreId: string, item: Omit<CartItem, "quantity">, quantity: number = 1) => {
-    let currentItems = items;
-    let currentStoreId = storeId;
+    // Get current state
+    const currentCart = getStoredCart();
+    let currentItems = currentCart.items;
+    let currentStoreId = currentCart.storeId;
 
     // If different store, clear cart
     if (currentStoreId && currentStoreId !== newStoreId) {
-      currentItems = [];
+      const newCart = [{ ...item, quantity }];
+      save(newStoreId, newCart);
+      return;
     }
+
     currentStoreId = newStoreId;
 
-    const variantKey = item.variant ? JSON.stringify(item.variant) : "";
-    const existing = currentItems.find(
-      (i) => i.productId === item.productId && (JSON.stringify(i.variant || "") === (variantKey || ""))
+    // Find existing item with same product + variant
+    const existing = currentItems.find((i) =>
+      itemsMatch(i.productId, i.variantId, i.variant, item.productId, item.variantId, item.variant)
     );
+
+    let newItems: CartItem[];
     if (existing) {
-      const updated = currentItems.map((i) =>
-        i.productId === item.productId && (JSON.stringify(i.variant || "") === (variantKey || ""))
+      // Update quantity of existing item
+      newItems = currentItems.map((i) =>
+        itemsMatch(i.productId, i.variantId, i.variant, item.productId, item.variantId, item.variant)
           ? { ...i, quantity: i.quantity + quantity }
           : i
       );
-      save(currentStoreId, updated);
     } else {
-      save(currentStoreId, [...currentItems, { ...item, quantity }]);
+      // Add new item
+      newItems = [...currentItems, { ...item, quantity }];
     }
-  }, [items, storeId, save]);
 
-  const removeItem = useCallback((productId: string, variant?: Record<string, string>) => {
-    const variantKey = variant ? JSON.stringify(variant) : "";
-    const filtered = items.filter(
-      (i) => !(i.productId === productId && (JSON.stringify(i.variant || "") === (variantKey || "")))
+    save(currentStoreId, newItems);
+  }, [save]);
+
+  const removeItem = useCallback((productId: string, variantId?: string, variant?: Record<string, string>) => {
+    const currentCart = getStoredCart();
+    const filtered = currentCart.items.filter(
+      (i) => !itemsMatch(i.productId, i.variantId, i.variant, productId, variantId, variant)
     );
-    save(filtered.length > 0 ? storeId : null, filtered);
-  }, [items, storeId, save]);
+    save(filtered.length > 0 ? currentCart.storeId : null, filtered);
+  }, [save]);
 
-  const updateQuantity = useCallback((productId: string, quantity: number, variant?: Record<string, string>) => {
+  const updateQuantity = useCallback((productId: string, quantity: number, variantId?: string, variant?: Record<string, string>) => {
     if (quantity <= 0) {
-      removeItem(productId, variant);
+      removeItem(productId, variantId, variant);
       return;
     }
-    const variantKey = variant ? JSON.stringify(variant) : "";
-    const updated = items.map((i) =>
-      i.productId === productId && (JSON.stringify(i.variant || "") === (variantKey || ""))
+
+    const currentCart = getStoredCart();
+    const updated = currentCart.items.map((i) =>
+      itemsMatch(i.productId, i.variantId, i.variant, productId, variantId, variant)
         ? { ...i, quantity }
         : i
     );
-    save(storeId, updated);
-  }, [items, storeId, save, removeItem]);
+    save(currentCart.storeId, updated);
+  }, [save, removeItem]);
 
   const clearCart = useCallback(() => {
     save(null, []);

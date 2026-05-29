@@ -30,6 +30,8 @@ interface TrackedOrder {
   subtotal: string;
   serviceFee: string;
   total: string;
+  bookingFee: string | null;
+  rejectionReason: string | null;
   items: OrderItem[];
   store: { name: string; slug: string; themeColor: string };
   createdAt: string;
@@ -161,6 +163,32 @@ export default function ConfirmDeliveryPage() {
           </div>
         )}
 
+        {/* Payment Status Banner */}
+        {order.paymentMethod === "online" && order.paymentStatus === "pending" && (
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center mb-6">
+            <Clock className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+            <p className="font-medium text-blue-700">Payment Under Review</p>
+            <p className="text-sm text-blue-600 mt-1">The seller is verifying your payment</p>
+          </div>
+        )}
+
+        {order.paymentMethod === "online" && order.paymentStatus === "paid" && (
+          <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center mb-6">
+            <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+            <p className="font-medium text-green-700">Payment Confirmed 🎉</p>
+            <p className="text-sm text-green-600 mt-1">Your order is being processed</p>
+          </div>
+        )}
+
+        {order.paymentMethod === "online" && order.paymentStatus === "failed" && order.rejectionReason && (
+          <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
+            <XCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <p className="font-medium text-red-700">Payment Rejected</p>
+            <p className="text-sm text-red-600 mt-1">{order.rejectionReason}</p>
+            <p className="text-xs text-red-500 mt-2">Please contact the seller or upload a new payment slip</p>
+          </div>
+        )}
+
         {/* Delivery confirmation banner */}
         {confirmed ? (
           <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center mb-6">
@@ -200,14 +228,6 @@ export default function ConfirmDeliveryPage() {
             ))}
           </div>
           <div className="border-t pt-2">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>LKR {Number(order.subtotal).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-gray-400">
-              <span>Service fee</span>
-              <span>LKR {Number(order.serviceFee).toLocaleString()}</span>
-            </div>
             <div className="flex justify-between font-bold text-base mt-1">
               <span>Total</span>
               <span>LKR {Number(order.total).toLocaleString()}</span>

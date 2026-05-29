@@ -28,6 +28,11 @@ const checkPhoneSchema = z.object({
   phone: z.string().regex(/^0\d{9}$/, "Invalid Sri Lankan phone number"),
 });
 
+const registerSchema = z.object({
+  idToken: z.string(),
+  name: z.string().min(1),
+});
+
 const signupSchema = z.object({
   idToken: z.string(),
   name: z.string().min(1),
@@ -158,6 +163,79 @@ router.post("/verify-firebase", async (req: Request, res: Response, next: NextFu
 
     if (!user) {
       throw new AppError("No account found. Please create your store first.", 404);
+    }
+
+    const token = signToken(user);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      user: {
+        id: user.id,
+        phone: user.phone,
+        name: user.name,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/auth/register - Create user + wallet only (no store) for onboarding flow
+router.post("/register", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { idToken, name } = registerSchema.parse(req.body);
+
+    // Verify Firebase ID token
+    let decodedToken;
+    try {
+      const auth = getFirebaseAuth();
+      decodedToken = await auth.verifyIdToken(idToken);
+    } catch (error) {
+      console.error("[Firebase] Token verification failed:", error);
+      throw new AppError("Invalid Firebase token", 401);
+    }
+
+    // Extract phone number from Firebase token
+    const phoneNumber = decodedToken.phone_number;
+    if (!phoneNumber) {
+      throw new AppError("Phone number not found in token", 400);
+    }
+
+    // Convert Firebase phone format (+94...) to local format (0...)
+    const phone = phoneNumber.startsWith("+94")
+      ? "0" + phoneNumber.slice(3)
+      : phoneNumber;
+
+    // Validate phone format
+    if (!/^0\d{9}$/.test(phone)) {
+      throw new AppError("Invalid Sri Lankan phone number", 400);
+    }
+
+    // If user already exists, return existing user + token (graceful re-entry)
+    let user = await prisma.user.findUnique({ where: { phone } });
+
+    if (!user) {
+      // Create user
+      user = await prisma.user.create({
+        data: {
+          phone,
+          name,
+          role: "seller",
+        },
+      });
+
+      // Create wallet for new seller with COD enabled by default
+      await prisma.wallet.create({
+        data: { sellerId: user.id, isCodEnabled: true },
+      });
     }
 
     const token = signToken(user);

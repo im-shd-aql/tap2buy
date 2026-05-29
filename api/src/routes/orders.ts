@@ -27,8 +27,9 @@ const createOrderSchema = z.object({
     .array(
       z.object({
         productId: z.string().uuid(),
+        variantId: z.string().uuid().optional(), // New: ProductVariant ID
         quantity: z.number().int().positive(),
-        variant: z.any().optional(),
+        variant: z.any().optional(), // Legacy: variant attributes
       })
     )
     .min(1),
@@ -68,14 +69,23 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
-    // Fetch products and calculate totals
+    // Fetch products and variants
+    const productIds = data.items.map((i) => i.productId);
+    const variantIds = data.items.map((i) => i.variantId).filter(Boolean) as string[];
+
     const products = await prisma.product.findMany({
       where: {
-        id: { in: data.items.map((i) => i.productId) },
+        id: { in: productIds },
         storeId: data.storeId,
         isActive: true,
       },
     });
+
+    const variants = variantIds.length > 0
+      ? await prisma.productVariant.findMany({
+          where: { id: { in: variantIds }, isActive: true },
+        })
+      : [];
 
     if (products.length !== data.items.length) {
       throw new AppError("Some products are unavailable", 400);
@@ -85,26 +95,50 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
     const orderItems = data.items.map((item) => {
       const product = products.find((p) => p.id === item.productId)!;
 
-      if (product.stock !== null && product.stock < item.quantity) {
-        throw new AppError(`${product.name} is out of stock`, 400);
+      // If variant specified, use variant data
+      if (item.variantId) {
+        const variant = variants.find((v) => v.id === item.variantId);
+        if (!variant) {
+          throw new AppError("Variant not found", 400);
+        }
+        if (variant.stock !== null && variant.stock < item.quantity) {
+          throw new AppError(`${product.name} (${variant.name}) is out of stock`, 400);
+        }
+
+        const lineTotal = Number(variant.price) * item.quantity;
+        subtotal += lineTotal;
+
+        return {
+          productId: product.id,
+          variantId: variant.id,
+          productName: `${product.name} - ${variant.name}`,
+          productPrice: variant.price,
+          quantity: item.quantity,
+          variant: item.variant || undefined,
+        };
+      } else {
+        // Simple product without variants
+        if (product.stock !== null && product.stock < item.quantity) {
+          throw new AppError(`${product.name} is out of stock`, 400);
+        }
+
+        const lineTotal = Number(product.price) * item.quantity;
+        subtotal += lineTotal;
+
+        return {
+          productId: product.id,
+          productName: product.name,
+          productPrice: product.price,
+          quantity: item.quantity,
+          variant: item.variant || undefined,
+        };
       }
-
-      const lineTotal = Number(product.price) * item.quantity;
-      subtotal += lineTotal;
-
-      return {
-        productId: product.id,
-        productName: product.name,
-        productPrice: product.price,
-        quantity: item.quantity,
-        variant: item.variant || undefined,
-      };
     });
 
-    const serviceFee = calculateServiceFee(subtotal, data.paymentMethod);
-    const total = calculateTotal(subtotal, serviceFee);
-    const bookingFee =
-      data.paymentMethod === "cod" ? calculateBookingFee(subtotal) : null;
+    // No fees - customer pays only the product price
+    const serviceFee = 0;
+    const total = subtotal;
+    const bookingFee = null;
 
     const orderNumber = await generateOrderNumber(data.storeId);
     const confirmationToken = uuidv4();
@@ -130,12 +164,24 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 
     // Deduct stock
     for (const item of data.items) {
-      const product = products.find((p) => p.id === item.productId)!;
-      if (product.stock !== null) {
-        await prisma.product.update({
-          where: { id: product.id },
-          data: { stock: { decrement: item.quantity } },
-        });
+      if (item.variantId) {
+        // Deduct from variant stock
+        const variant = variants.find((v) => v.id === item.variantId);
+        if (variant && variant.stock !== null) {
+          await prisma.productVariant.update({
+            where: { id: variant.id },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+      } else {
+        // Deduct from product stock
+        const product = products.find((p) => p.id === item.productId)!;
+        if (product.stock !== null) {
+          await prisma.product.update({
+            where: { id: product.id },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
       }
     }
 
@@ -164,7 +210,17 @@ router.get(
           storeId,
           ...(status ? { orderStatus: status as any } : {}),
         },
-        include: { items: true },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  images: true,
+                },
+              },
+            },
+          },
+        },
         orderBy: { createdAt: "desc" },
       });
 
@@ -184,7 +240,15 @@ router.get(
       const order = await prisma.order.findFirst({
         where: { confirmationToken: token },
         include: {
-          items: true,
+          items: {
+            include: {
+              product: {
+                select: {
+                  images: true,
+                },
+              },
+            },
+          },
           store: { select: { name: true, slug: true, themeColor: true } },
         },
       });
@@ -205,6 +269,7 @@ router.get(
           subtotal: order.subtotal,
           serviceFee: order.serviceFee,
           total: order.total,
+          bookingFee: order.bookingFee,
           items: order.items,
           store: order.store,
           createdAt: order.createdAt,
@@ -252,7 +317,18 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const order = await prisma.order.findUnique({
       where: { id: param(req, "id") },
-      include: { items: true, store: { select: { name: true, slug: true } } },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                images: true,
+              },
+            },
+          },
+        },
+        store: { select: { name: true, slug: true } },
+      },
     });
 
     if (!order) {
@@ -402,6 +478,176 @@ router.post(
       }
 
       res.json({ message: "COD payment collected" });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /api/orders/:id/bank-details — Get seller's bank account for payment (public/buyer)
+router.get(
+  "/:id/bank-details",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const orderId = param(req, "id");
+
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { store: true },
+      });
+
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (order.paymentMethod !== "online") {
+        throw new AppError("Bank details only for bank transfer orders", 400);
+      }
+
+      const bankAccount = await prisma.bankAccount.findFirst({
+        where: {
+          sellerId: order.store.sellerId,
+          isPrimary: true,
+        },
+      });
+
+      if (!bankAccount) {
+        throw new AppError("Bank account not configured", 404);
+      }
+
+      res.json({
+        bankAccount: {
+          bankName: bankAccount.bankName,
+          branch: bankAccount.branch,
+          accountNumber: bankAccount.accountNumber,
+          accountName: bankAccount.accountName,
+        },
+        amount: order.total,
+        orderNumber: order.orderNumber,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/orders/:id/payment-slip — Upload payment slip (public/buyer)
+router.post(
+  "/:id/payment-slip",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { paymentSlipUrl, paymentSlipNote } = z
+        .object({
+          paymentSlipUrl: z.string().url(),
+          paymentSlipNote: z.string().optional(),
+        })
+        .parse(req.body);
+      const orderId = param(req, "id");
+
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (order.paymentMethod !== "online") {
+        throw new AppError("Payment slip only for bank transfer orders", 400);
+      }
+
+      const updated = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          paymentSlipUrl,
+          paymentSlipNote: paymentSlipNote || null,
+          paymentStatus: "pending", // Reset to pending when new slip uploaded
+          rejectionReason: null, // Clear previous rejection
+        },
+      });
+
+      res.json({ order: updated });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/orders/:id/confirm-payment — Confirm payment (auth: seller)
+router.post(
+  "/:id/confirm-payment",
+  requireAuth,
+  requireSeller,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const orderId = param(req, "id");
+
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { store: true },
+      });
+
+      if (!order || order.store.sellerId !== req.user!.id) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (order.paymentMethod !== "online") {
+        throw new AppError("Only for bank transfer orders", 400);
+      }
+
+      if (!order.paymentSlipUrl) {
+        throw new AppError("No payment slip uploaded", 400);
+      }
+
+      const updated = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          paymentStatus: "paid",
+          rejectionReason: null,
+        },
+      });
+
+      res.json({ order: updated });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/orders/:id/reject-payment — Reject payment (auth: seller)
+router.post(
+  "/:id/reject-payment",
+  requireAuth,
+  requireSeller,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { reason } = z
+        .object({
+          reason: z.string().min(1).optional(),
+        })
+        .parse(req.body);
+      const orderId = param(req, "id");
+
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { store: true },
+      });
+
+      if (!order || order.store.sellerId !== req.user!.id) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (order.paymentMethod !== "online") {
+        throw new AppError("Only for bank transfer orders", 400);
+      }
+
+      const updated = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          paymentStatus: "failed",
+          rejectionReason: reason || "Payment verification failed",
+        },
+      });
+
+      res.json({ order: updated });
     } catch (error) {
       next(error);
     }

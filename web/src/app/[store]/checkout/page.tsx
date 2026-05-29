@@ -40,8 +40,11 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [copied, setCopied] = useState(false);
   const [showContent, setShowContent] = useState(false);
+  const [themeColor, setThemeColor] = useState("#6366f1");
 
   useEffect(() => {
+    const val = getComputedStyle(document.documentElement).getPropertyValue("--store-theme")?.trim();
+    if (val) setThemeColor(val);
     // Stagger content appearance for dramatic effect
     const timer = setTimeout(() => setShowContent(true), 500);
     return () => clearTimeout(timer);
@@ -114,6 +117,19 @@ export default function CheckoutPage() {
           </div>
         )}
 
+        {/* Bank Transfer - Payment Under Review */}
+        {!isCod && order && order.paymentMethod === "online" && (
+          <div className={`bg-blue-50 border border-blue-200 rounded-2xl p-4 mt-5 text-sm text-blue-700 text-left transition-all duration-500 delay-200 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <div className="flex gap-2.5">
+              <Clock className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold mb-0.5">Payment Under Review</p>
+                <p>Your payment slip is being verified by the seller. You will be notified once confirmed.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Order details card */}
         {order && (
           <div className={`bg-white rounded-2xl shadow-sm p-5 mt-5 text-left transition-all duration-500 delay-300 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
@@ -144,7 +160,8 @@ export default function CheckoutPage() {
           <div className={`mt-5 space-y-2 transition-all duration-500 delay-500 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             <Link
               href={`/confirm/${order.confirmationToken}`}
-              className="flex items-center justify-center gap-2 w-full py-3.5 bg-gray-900 text-white rounded-2xl font-semibold text-sm active:scale-[0.98] transition-all duration-200 hover:bg-gray-800"
+              className="flex items-center justify-center gap-2 w-full py-3.5 text-white rounded-2xl font-semibold text-sm active:scale-[0.98] transition-all duration-200 shadow-sm"
+              style={{ backgroundColor: themeColor }}
             >
               Track Your Order
               <ArrowRight className="w-4 h-4" />

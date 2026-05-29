@@ -15,13 +15,14 @@ interface Product {
   images: string[];
   stock: number | null;
   badge: string | null;
+  hasVariants?: boolean;
 }
 
 const BADGE_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
   new: { bg: "bg-emerald-600/10", text: "text-emerald-700", border: "border border-emerald-600/20", label: "NEW" },
   sale: { bg: "bg-rose-600/10", text: "text-rose-700", border: "border border-rose-600/20", label: "SALE" },
   limited: { bg: "bg-amber-600/10", text: "text-amber-700", border: "border border-amber-600/20", label: "LIMITED" },
-  soldout: { bg: "bg-stone-200", text: "text-stone-600", border: "border border-stone-300", label: "SOLD OUT" },
+  soldout: { bg: "bg-gray-200", text: "text-gray-600", border: "border border-gray-300", label: "SOLD OUT" },
 };
 
 export default function ProductCard({
@@ -56,6 +57,11 @@ export default function ProductCard({
     e.preventDefault();
     e.stopPropagation();
     if (isOutOfStock) return;
+    // Products with variants need variant selection — navigate to product page
+    if (product.hasVariants) {
+      window.location.href = `/${storeSlug}/${product.id}`;
+      return;
+    }
     addItem(storeId, {
       productId: product.id,
       name: product.name,
@@ -70,9 +76,9 @@ export default function ProductCard({
   return (
     <Link
       href={`/${storeSlug}/${product.id}`}
-      className="bg-white rounded-xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] ring-1 ring-black/5 hover:ring-black/10 transition-all duration-300 hover:-translate-y-1 group"
+      className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-shadow duration-300 group"
     >
-      <div className="aspect-square bg-stone-50 relative overflow-hidden">
+      <div className="aspect-square bg-gray-50 relative overflow-hidden">
         {product.images[0] ? (
           <Image
             src={product.images[0]}
@@ -82,7 +88,7 @@ export default function ProductCard({
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-stone-300 text-sm">
+          <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
             No image
           </div>
         )}
@@ -95,7 +101,7 @@ export default function ProductCard({
         {/* Badge */}
         {badgeStyle && (
           <span
-            className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-md text-[11px] font-semibold tracking-[0.05em] uppercase ${badgeStyle.bg} ${badgeStyle.text} ${badgeStyle.border}`}
+            className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-[0.05em] uppercase ${badgeStyle.bg} ${badgeStyle.text} ${badgeStyle.border}`}
           >
             {badgeStyle.label}
           </span>
@@ -103,32 +109,32 @@ export default function ProductCard({
 
         {/* Discount badge */}
         {discount > 0 && !isOutOfStock && (
-          <span className="absolute top-2.5 right-2.5 bg-gradient-to-br from-rose-500 to-rose-600 text-white px-2 py-1 rounded-md text-[11px] font-semibold tracking-[0.05em] shadow-md">
+          <span className="absolute top-2 right-2 bg-gradient-to-br from-rose-500 to-rose-600 text-white px-1.5 py-0.5 rounded-md text-[10px] font-semibold tracking-[0.05em] shadow-sm">
             -{discount}%
           </span>
         )}
 
-        {/* Quick Add — always visible on mobile, hover on desktop */}
+        {/* Quick Add — always visible on mobile */}
         {!isOutOfStock && (
           <button
             onClick={handleQuickAdd}
-            className={`absolute bottom-2.5 right-2.5 w-11 h-11 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.1)] flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 active:scale-90 border ${
-              added ? "bg-emerald-500 text-white scale-110 border-emerald-500" : "bg-white border-black/5 hover:border-black/10"
+            className={`absolute bottom-2 right-2 w-9 h-9 rounded-full shadow-sm flex items-center justify-center transition-all duration-200 active:scale-90 ${
+              added ? "bg-emerald-500 text-white scale-110" : "bg-white/90 backdrop-blur-sm"
             }`}
             style={added ? {} : { color: themeColor }}
           >
-            {added ? <Check className="w-4.5 h-4.5" strokeWidth={3} /> : <ShoppingCart className="w-4.5 h-4.5" />}
+            {added ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : <ShoppingCart className="w-3.5 h-3.5" />}
           </button>
         )}
       </div>
-      <div className="px-4 py-4">
-        <p className="font-medium text-base text-neutral-900 line-clamp-2 leading-relaxed min-h-[3rem]">{product.name}</p>
-        <div className="flex items-baseline gap-1.5 mt-2">
-          <span className="font-bold text-lg" style={{ color: themeColor }}>
+      <div className="p-2.5">
+        <p className="font-medium text-sm text-gray-900 truncate">{product.name}</p>
+        <div className="flex items-baseline gap-1.5 mt-1">
+          <span className="font-bold text-sm" style={{ color: themeColor }}>
             LKR {Number(product.price).toLocaleString()}
           </span>
           {product.comparePrice && (
-            <span className="text-xs text-stone-400 line-through">
+            <span className="text-[10px] text-gray-400 line-through">
               {Number(product.comparePrice).toLocaleString()}
             </span>
           )}

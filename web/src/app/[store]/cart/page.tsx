@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { api } from "@/lib/api";
@@ -31,22 +31,46 @@ export default function CartPage() {
   const [buyerPhone, setBuyerPhone] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod" | null>(null);
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<{
+    bankTransfer: boolean;
+    cod: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const serviceFeeRate = paymentMethod === "online" ? 0.06 : 0.08;
-  const serviceFee = Math.round(subtotal * serviceFeeRate * 100) / 100;
-  const total = subtotal + serviceFee;
+  const [themeColor, setThemeColor] = useState("#6366f1");
 
-  // Read theme color from CSS variable or default
-  const themeColor = typeof document !== "undefined"
-    ? getComputedStyle(document.documentElement).getPropertyValue("--store-theme")?.trim() || "#6366f1"
-    : "#6366f1";
+  useEffect(() => {
+    const val = getComputedStyle(document.documentElement).getPropertyValue("--store-theme")?.trim();
+    if (val) setThemeColor(val);
+  }, []);
+
+  // Fetch available payment methods
+  useEffect(() => {
+    if (storeSlug) {
+      api
+        .get<{ paymentMethods: { bankTransfer: boolean; cod: boolean } }>(
+          `/api/stores/${storeSlug}/payment-methods`
+        )
+        .then((data) => {
+          setAvailablePaymentMethods(data.paymentMethods);
+          // Set default payment method
+          if (data.paymentMethods.bankTransfer) {
+            setPaymentMethod("online");
+          } else if (data.paymentMethods.cod) {
+            setPaymentMethod("cod");
+          }
+        })
+        .catch(() => {
+          setError("Failed to load payment methods");
+        });
+    }
+  }, [storeSlug]);
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault();
-    if (!storeId) return;
+    if (!storeId || !paymentMethod) return;
     setError("");
     setLoading(true);
 
@@ -62,6 +86,7 @@ export default function CartPage() {
           notes: notes || undefined,
           items: items.map((item) => ({
             productId: item.productId,
+            variantId: item.variantId,
             quantity: item.quantity,
             ...(item.variant ? { variant: item.variant } : {}),
           })),
@@ -69,11 +94,17 @@ export default function CartPage() {
       );
 
       clearCart();
-      router.push(
-        `/${storeSlug}/checkout?orderId=${order.id}&orderNumber=${order.orderNumber}${
-          paymentMethod === "cod" ? "&cod=true" : ""
-        }`
-      );
+
+      // Redirect based on payment method
+      if (paymentMethod === "online") {
+        // Bank transfer - show bank details page
+        router.push(`/${storeSlug}/checkout/bank-transfer?orderId=${order.id}`);
+      } else {
+        // COD - show success page
+        router.push(
+          `/${storeSlug}/checkout?orderId=${order.id}&orderNumber=${order.orderNumber}&cod=true`
+        );
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -125,7 +156,7 @@ export default function CartPage() {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-5">
           {items.map((item, idx) => (
             <div
-              key={`${item.productId}-${JSON.stringify(item.variant || {})}`}
+              key={item.variantId || `${item.productId}-${JSON.stringify(item.variant || {})}`}
               className={`flex gap-3.5 p-4 ${idx > 0 ? "border-t border-gray-100" : ""}`}
             >
               <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
@@ -155,14 +186,14 @@ export default function CartPage() {
                 </p>
                 <div className="flex items-center gap-2 mt-2.5">
                   <button
-                    onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variant)}
+                    onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId, item.variant)}
                     className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
                   <span className="text-sm font-semibold w-6 text-center tabular-nums">{item.quantity}</span>
                   <button
-                    onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variant)}
+                    onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId, item.variant)}
                     className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -171,7 +202,7 @@ export default function CartPage() {
                     LKR {(item.price * item.quantity).toLocaleString()}
                   </span>
                   <button
-                    onClick={() => removeItem(item.productId, item.variant)}
+                    onClick={() => removeItem(item.productId, item.variantId, item.variant)}
                     className="w-8 h-8 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg flex items-center justify-center transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -239,72 +270,73 @@ export default function CartPage() {
           </div>
 
           {/* Payment method card */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <CreditCard className="w-5 h-5 text-gray-400" />
-              <h2 className="font-bold">Payment Method</h2>
+          {availablePaymentMethods && (
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <CreditCard className="w-5 h-5 text-gray-400" />
+                <h2 className="font-bold">Payment Method</h2>
+              </div>
+              {!availablePaymentMethods.bankTransfer && !availablePaymentMethods.cod ? (
+                <div className="text-center py-6">
+                  <p className="text-sm text-gray-500">No payment methods available</p>
+                  <p className="text-xs text-gray-400 mt-1">Please contact the seller</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {availablePaymentMethods.bankTransfer && (
+                    <label
+                      className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                        paymentMethod === "online"
+                          ? "border-gray-900 bg-gray-50 shadow-sm"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="online"
+                        checked={paymentMethod === "online"}
+                        onChange={() => setPaymentMethod("online")}
+                        className="hidden"
+                      />
+                      <CreditCard className={`w-5 h-5 mb-2 ${paymentMethod === "online" ? "text-gray-900" : "text-gray-400"}`} />
+                      <p className="font-semibold text-sm">Bank Transfer</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Pay via bank</p>
+                    </label>
+                  )}
+                  {availablePaymentMethods.cod && (
+                    <label
+                      className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                        paymentMethod === "cod"
+                          ? "border-gray-900 bg-gray-50 shadow-sm"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="cod"
+                        checked={paymentMethod === "cod"}
+                        onChange={() => setPaymentMethod("cod")}
+                        className="hidden"
+                      />
+                      <Banknote className={`w-5 h-5 mb-2 ${paymentMethod === "cod" ? "text-gray-900" : "text-gray-400"}`} />
+                      <p className="font-semibold text-sm">Cash on Delivery</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Pay on arrival</p>
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <label
-                className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                  paymentMethod === "online"
-                    ? "border-gray-900 bg-gray-50 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="online"
-                  checked={paymentMethod === "online"}
-                  onChange={() => setPaymentMethod("online")}
-                  className="hidden"
-                />
-                <CreditCard className={`w-5 h-5 mb-2 ${paymentMethod === "online" ? "text-gray-900" : "text-gray-400"}`} />
-                <p className="font-semibold text-sm">Pay Online</p>
-                <p className="text-xs text-gray-500 mt-0.5">Card / Bank</p>
-                <p className="text-xs text-gray-400 mt-1">6% fee</p>
-              </label>
-              <label
-                className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                  paymentMethod === "cod"
-                    ? "border-gray-900 bg-gray-50 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="cod"
-                  checked={paymentMethod === "cod"}
-                  onChange={() => setPaymentMethod("cod")}
-                  className="hidden"
-                />
-                <Banknote className={`w-5 h-5 mb-2 ${paymentMethod === "cod" ? "text-gray-900" : "text-gray-400"}`} />
-                <p className="font-semibold text-sm">Cash on Delivery</p>
-                <p className="text-xs text-gray-500 mt-0.5">Pay on arrival</p>
-                <p className="text-xs text-gray-400 mt-1">8% fee</p>
-              </label>
-            </div>
-          </div>
+          )}
 
           {/* Order Summary card */}
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <h2 className="font-bold mb-3">Order Summary</h2>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Subtotal</span>
-                <span className="font-medium tabular-nums">LKR {subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">
-                  Service fee ({Math.round(serviceFeeRate * 100)}%)
-                </span>
-                <span className="font-medium tabular-nums">LKR {serviceFee.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between font-bold text-lg pt-3 border-t border-gray-100">
+              <div className="flex justify-between font-bold text-lg pt-1">
                 <span>Total</span>
-                <span className="tabular-nums">LKR {total.toLocaleString()}</span>
+                <span className="tabular-nums">LKR {subtotal.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -317,8 +349,9 @@ export default function CartPage() {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-semibold text-base hover:bg-gray-800 disabled:opacity-50 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+            disabled={loading || !paymentMethod}
+            className="w-full py-4 text-white rounded-2xl font-semibold text-base disabled:opacity-50 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
+            style={{ backgroundColor: themeColor }}
           >
             {loading ? (
               <span className="flex items-center gap-2">
@@ -326,7 +359,7 @@ export default function CartPage() {
                 Processing...
               </span>
             ) : (
-              `Place Order — LKR ${total.toLocaleString()}`
+              `Place Order — LKR ${subtotal.toLocaleString()}`
             )}
           </button>
 

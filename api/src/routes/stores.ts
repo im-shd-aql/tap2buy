@@ -93,6 +93,65 @@ router.get("/me/store", requireAuth, requireSeller, async (req: Request, res: Re
   }
 });
 
+// GET /api/stores/me/store/limits — Get brand settings change limits
+router.get("/me/store/limits", requireAuth, requireSeller, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const store = await prisma.store.findUnique({
+      where: { sellerId: req.user!.id },
+      select: {
+        nameChangeCount: true,
+        nameChangeCountYear: true,
+        nameLastChangedAt: true,
+        categoryLastChangedAt: true,
+      },
+    });
+
+    if (!store) {
+      throw new AppError("Store not found", 404);
+    }
+
+    const currentYear = new Date().getFullYear();
+
+    // Reset name change count if new year
+    let nameChangesRemaining = 3;
+    if (store.nameChangeCountYear === currentYear) {
+      nameChangesRemaining = 3 - store.nameChangeCount;
+    }
+
+    // Calculate category next change date
+    let categoryNextChange: string | null = null;
+    let categoryCanChange = true;
+    if (store.categoryLastChangedAt) {
+      const daysSinceLastChange = Math.floor(
+        (Date.now() - store.categoryLastChangedAt.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSinceLastChange < 30) {
+        categoryCanChange = false;
+        const nextChangeDate = new Date(store.categoryLastChangedAt);
+        nextChangeDate.setDate(nextChangeDate.getDate() + 30);
+        categoryNextChange = nextChangeDate.toISOString();
+      }
+    }
+
+    res.json({
+      limits: {
+        name: {
+          remaining: nameChangesRemaining,
+          total: 3,
+          resetsAt: `${currentYear + 1}-01-01`,
+        },
+        category: {
+          canChange: categoryCanChange,
+          nextChangeAt: categoryNextChange,
+          cooldownDays: 30,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/stores/:slug — Get store by slug (public)
 router.get("/:slug", async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -102,6 +161,12 @@ router.get("/:slug", async (req: Request, res: Response, next: NextFunction) => 
         products: {
           where: { isActive: true },
           orderBy: { sortOrder: "asc" },
+          include: {
+            productVariants: {
+              where: { isActive: true },
+              orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+            },
+          },
         },
       },
     });
@@ -130,8 +195,13 @@ router.put("/:id", requireAuth, requireSeller, async (req: Request, res: Respons
       throw new AppError("Store not found", 404);
     }
 
-    // Check for duplicate store name on rename (case-insensitive)
+    const { socialLinks, ...restData } = data;
+    const updateData: Prisma.StoreUpdateInput = { ...restData };
+    const currentYear = new Date().getFullYear();
+
+    // ===== NAME CHANGE VALIDATION =====
     if (data.name && data.name.toLowerCase() !== store.name.toLowerCase()) {
+      // Check for duplicate store name (case-insensitive)
       const nameExists = await prisma.store.findFirst({
         where: {
           name: { equals: data.name, mode: "insensitive" },
@@ -141,17 +211,59 @@ router.put("/:id", requireAuth, requireSeller, async (req: Request, res: Respons
       if (nameExists) {
         throw new AppError("A store with this name already exists. Please choose a different name.", 409);
       }
+
+      // Reset counter if new year
+      let changeCount = store.nameChangeCount;
+      let changeYear = store.nameChangeCountYear;
+      if (changeYear !== currentYear) {
+        changeCount = 0;
+        changeYear = currentYear;
+      }
+
+      // Check limit: 3 changes per year
+      if (changeCount >= 3) {
+        throw new AppError(
+          `You've reached the limit of 3 name changes per year. Next reset: January 1, ${currentYear + 1}`,
+          429
+        );
+      }
+
+      // Increment counter and track change
+      updateData.nameChangeCount = changeCount + 1;
+      updateData.nameChangeCountYear = changeYear;
+      updateData.nameLastChangedAt = new Date();
+    }
+
+    // ===== CATEGORY CHANGE VALIDATION =====
+    if (data.category !== undefined && data.category !== store.category) {
+      const categoryLastChanged = store.categoryLastChangedAt;
+
+      if (categoryLastChanged) {
+        const daysSinceLastChange = Math.floor(
+          (Date.now() - categoryLastChanged.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysSinceLastChange < 30) {
+          const daysRemaining = 30 - daysSinceLastChange;
+          const nextChangeDate = new Date(categoryLastChanged);
+          nextChangeDate.setDate(nextChangeDate.getDate() + 30);
+
+          throw new AppError(
+            `You can only change your category once every 30 days. Next change available: ${nextChangeDate.toLocaleDateString()} (${daysRemaining} days remaining)`,
+            429
+          );
+        }
+      }
+
+      updateData.categoryLastChangedAt = new Date();
     }
 
     // Transform null socialLinks to Prisma.JsonNull for Json fields
-    const updateData: Prisma.StoreUpdateInput = {
-      ...data,
-      socialLinks: data.socialLinks === null
-        ? Prisma.JsonNull
-        : data.socialLinks === undefined
-          ? undefined
-          : data.socialLinks,
-    };
+    updateData.socialLinks = socialLinks === null
+      ? Prisma.JsonNull
+      : socialLinks === undefined
+        ? undefined
+        : socialLinks;
 
     const updated = await prisma.store.update({
       where: { id: storeId },
@@ -159,6 +271,37 @@ router.put("/:id", requireAuth, requireSeller, async (req: Request, res: Respons
     });
 
     res.json({ store: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/stores/:slug/payment-methods — Get available payment methods (public)
+router.get("/:slug/payment-methods", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const store = await prisma.store.findUnique({
+      where: { slug: param(req, "slug") },
+    });
+
+    if (!store || !store.isActive) {
+      throw new AppError("Store not found", 404);
+    }
+
+    // Check if bank transfer is available (primary bank account configured)
+    const hasBankAccount = await prisma.bankAccount.findFirst({
+      where: {
+        sellerId: store.sellerId,
+        isPrimary: true,
+      },
+    });
+
+    // COD is always available
+    res.json({
+      paymentMethods: {
+        bankTransfer: !!hasBankAccount,
+        cod: true,
+      },
+    });
   } catch (error) {
     next(error);
   }

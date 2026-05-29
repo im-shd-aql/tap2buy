@@ -5,7 +5,7 @@ import CartBadge from "./cart-badge";
 import AnnouncementBar from "./announcement-bar";
 import StoreContent from "./store-content";
 import StickyHeader from "./sticky-header";
-import BackToTop from "./back-to-top";
+import ShareSheet from "./[product]/share-sheet";
 import type { Metadata } from "next";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -22,6 +22,7 @@ interface Product {
   category: string | null;
   isFeatured: boolean;
   badge: string | null;
+  hasVariants?: boolean;
 }
 
 interface SocialLinks {
@@ -89,12 +90,12 @@ export async function generateMetadata({
   };
 }
 
-function SocialIcon({ type, url }: { type: string; url: string }) {
+function SmallSocialIcon({ type, url }: { type: string; url: string }) {
   const icons: Record<string, React.ReactNode> = {
-    instagram: <Instagram className="w-5 h-5" />,
-    facebook: <Facebook className="w-5 h-5" />,
+    instagram: <Instagram className="w-3.5 h-3.5" />,
+    facebook: <Facebook className="w-3.5 h-3.5" />,
     tiktok: (
-      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.71a8.2 8.2 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.14z" />
       </svg>
     ),
@@ -104,7 +105,7 @@ function SocialIcon({ type, url }: { type: string; url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-white/30 transition-all duration-200 hover:scale-110"
+      className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors"
     >
       {icons[type] || null}
     </a>
@@ -121,13 +122,13 @@ export default async function StorePage({
 
   if (!store) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-neutral-100 flex items-center justify-center">
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
             <span className="text-3xl">🏪</span>
           </div>
           <h1 className="text-2xl font-bold mb-2">Store not found</h1>
-          <p className="text-stone-600">This store doesn&apos;t exist or is inactive.</p>
+          <p className="text-gray-500">This store doesn&apos;t exist or is inactive.</p>
         </div>
       </div>
     );
@@ -143,26 +144,29 @@ export default async function StorePage({
         `Check out ${store.name} on Tap2Buy: https://tap2buy.lk/${store.slug}`
       )}`;
 
+  const storeUrl = `${SITE_URL}/${store.slug}`;
+  const shareText = `Check out ${store.name} on Tap2Buy`;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-neutral-50/50 to-white">
+    <div className="min-h-screen bg-white">
       <StickyHeader
         storeName={store.name}
         storeSlug={store.slug}
         themeColor={store.themeColor}
+        logoUrl={store.logoUrl}
       />
-      <BackToTop />
 
       {/* Announcement Bar */}
       {store.announcement && (
         <AnnouncementBar text={store.announcement} themeColor={store.themeColor} />
       )}
 
-      {/* Hero Section */}
-      <header className="relative text-white overflow-hidden">
+      {/* Header */}
+      <header>
         {store.bannerUrl ? (
-          /* Banner variant */
+          /* Banner variant: edge-to-edge banner, logo overlapping bottom */
           <div className="relative">
-            <div className="relative w-full h-52 sm:h-64">
+            <div className="relative w-full h-44 sm:h-56">
               <Image
                 src={store.bannerUrl}
                 alt={`${store.name} banner`}
@@ -172,17 +176,12 @@ export default async function StorePage({
                 className="object-cover"
               />
             </div>
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(to top, ${store.themeColor} 0%, ${store.themeColor}99 35%, transparent 70%)`,
-              }}
-            />
-            <div className="absolute bottom-0 left-0 right-0 px-4 pb-5">
-              <div className="max-w-3xl mx-auto flex items-end justify-between">
-                <div className="flex items-center gap-3.5">
-                  {store.logoUrl && (
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.12)] bg-white/90 ring-1 ring-black/5 flex-shrink-0">
+            {/* Profile section overlapping banner */}
+            <div className="max-w-3xl mx-auto px-4 relative">
+              <div className="flex items-end justify-between -mt-8">
+                <div className="flex items-end gap-3">
+                  {store.logoUrl ? (
+                    <div className="relative w-16 h-16 rounded-full overflow-hidden border-[3px] border-white shadow-md bg-white flex-shrink-0">
                       <Image
                         src={store.logoUrl}
                         alt={store.name}
@@ -191,72 +190,110 @@ export default async function StorePage({
                         className="object-cover"
                       />
                     </div>
+                  ) : (
+                    <div
+                      className="w-16 h-16 rounded-full border-[3px] border-white shadow-md flex-shrink-0 flex items-center justify-center text-white text-xl font-bold"
+                      style={{ backgroundColor: store.themeColor }}
+                    >
+                      {store.name.charAt(0)}
+                    </div>
                   )}
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-tight drop-shadow-md">{store.name}</h1>
-                    {store.category && (
-                      <p className="text-sm opacity-90 mt-0.5">{store.category}</p>
-                    )}
-                  </div>
                 </div>
-                <CartBadge slug={store.slug} themeColor={store.themeColor} />
+                <div className="flex items-center gap-2 pb-1">
+                  <ShareSheet
+                    productName={store.name}
+                    productUrl={storeUrl}
+                    shareText={shareText}
+                  />
+                  <CartBadge slug={store.slug} themeColor={store.themeColor} />
+                </div>
+              </div>
+              {/* Name + category + social row */}
+              <div className="mt-3 pb-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-xl font-bold tracking-tight text-gray-900">{store.name}</h1>
+                  {socialEntries.length > 0 && (
+                    <div className="flex gap-1">
+                      {socialEntries.map(([type, url]) => (
+                        <SmallSocialIcon key={type} type={type} url={url as string} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {store.category && (
+                  <span
+                    className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: `${store.themeColor}12`, color: store.themeColor }}
+                  >
+                    {store.category}
+                  </span>
+                )}
+                {store.description && (
+                  <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">{store.description}</p>
+                )}
               </div>
             </div>
           </div>
         ) : (
-          /* Gradient variant (no banner) */
-          <div
-            className="px-4 py-10 relative overflow-hidden"
-            style={{
-              background: `linear-gradient(135deg, ${store.themeColor} 0%, ${store.themeColor}bb 50%, ${store.themeColor}88 100%)`,
-            }}
-          >
-            <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 bg-white -translate-y-1/2 translate-x-1/4" />
-            <div className="absolute bottom-0 left-8 w-24 h-24 rounded-full opacity-[0.07] bg-white" />
-            <div className="max-w-3xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-3.5">
-                {store.logoUrl && (
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.12)] bg-white/90 ring-1 ring-black/5 flex-shrink-0">
+          /* No banner: clean white bg, subtle accent */
+          <div className="max-w-3xl mx-auto px-4 pt-6 pb-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                {store.logoUrl ? (
+                  <div className="relative w-14 h-14 rounded-full overflow-hidden shadow-sm bg-white flex-shrink-0 ring-2 ring-gray-100">
                     <Image
                       src={store.logoUrl}
                       alt={store.name}
                       fill
-                      sizes="64px"
+                      sizes="56px"
                       className="object-cover"
                     />
                   </div>
+                ) : (
+                  <div
+                    className="w-14 h-14 rounded-full shadow-sm flex-shrink-0 flex items-center justify-center text-white text-lg font-bold"
+                    style={{ backgroundColor: store.themeColor }}
+                  >
+                    {store.name.charAt(0)}
+                  </div>
                 )}
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight">{store.name}</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold tracking-tight text-gray-900">{store.name}</h1>
+                    {socialEntries.length > 0 && (
+                      <div className="flex gap-1">
+                        {socialEntries.map(([type, url]) => (
+                          <SmallSocialIcon key={type} type={type} url={url as string} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   {store.category && (
-                    <p className="text-sm opacity-90 mt-0.5">{store.category}</p>
+                    <span
+                      className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: `${store.themeColor}12`, color: store.themeColor }}
+                    >
+                      {store.category}
+                    </span>
                   )}
                 </div>
               </div>
-              <CartBadge slug={store.slug} themeColor={store.themeColor} />
+              <div className="flex items-center gap-2 pt-1">
+                <ShareSheet
+                  productName={store.name}
+                  productUrl={storeUrl}
+                  shareText={shareText}
+                />
+                <CartBadge slug={store.slug} themeColor={store.themeColor} />
+              </div>
             </div>
+            {store.description && (
+              <p className="text-sm text-gray-500 mt-3 leading-relaxed">{store.description}</p>
+            )}
           </div>
         )}
-        {/* Description + Social links row below hero */}
-        {(store.description || socialEntries.length > 0) && (
-          <div
-            className="px-4 py-3 border-t border-white/15"
-            style={{ backgroundColor: store.themeColor }}
-          >
-            <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-              {store.description && (
-                <p className="text-sm opacity-90 flex-1">{store.description}</p>
-              )}
-              {socialEntries.length > 0 && (
-                <div className="flex gap-2 flex-shrink-0">
-                  {socialEntries.map(([type, url]) => (
-                    <SocialIcon key={type} type={type} url={url as string} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Subtle divider */}
+        <div className="h-px bg-gray-100" />
       </header>
 
       {/* Interactive content: Search, Categories, Featured, Grid */}
@@ -287,7 +324,7 @@ export default async function StorePage({
                 <h3 className="font-bold text-sm">About {store.name}</h3>
               </div>
             </div>
-            <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">
+            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
               {store.aboutText}
             </p>
           </div>
@@ -305,7 +342,7 @@ export default async function StorePage({
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm mb-1">Delivery</h4>
-                  <p className="text-sm text-stone-600 whitespace-pre-wrap leading-relaxed">
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
                     {store.deliveryInfo}
                   </p>
                 </div>
@@ -318,7 +355,7 @@ export default async function StorePage({
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm mb-1">Returns</h4>
-                  <p className="text-sm text-stone-600 whitespace-pre-wrap leading-relaxed">
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
                     {store.returnPolicy}
                   </p>
                 </div>
@@ -340,32 +377,11 @@ export default async function StorePage({
       </a>
 
       {/* Footer */}
-      <footer className="text-center py-8 space-y-4">
-        {socialEntries.length > 0 && (
-          <div className="flex justify-center gap-2">
-            {socialEntries.map(([type, url]) => (
-              <a
-                key={type}
-                href={url as string}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-400 hover:bg-stone-50 hover:border-stone-300 hover:text-stone-600 hover:shadow-sm hover:scale-105 transition-all duration-200"
-              >
-                {type === "instagram" && <Instagram className="w-4 h-4" />}
-                {type === "facebook" && <Facebook className="w-4 h-4" />}
-                {type === "tiktok" && (
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.71a8.2 8.2 0 004.76 1.52v-3.4a4.85 4.85 0 01-1-.14z" />
-                  </svg>
-                )}
-              </a>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center justify-center gap-1.5 text-xs text-stone-400">
+      <footer className="text-center py-8">
+        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
           <ShieldCheck className="w-3.5 h-3.5" />
           Powered by{" "}
-          <a href="https://tap2buy.lk" className="font-medium hover:text-stone-500 underline decoration-stone-300 underline-offset-2 transition-colors">
+          <a href="https://tap2buy.lk" className="font-medium hover:text-gray-500 underline decoration-gray-300 underline-offset-2 transition-colors">
             Tap2Buy
           </a>
         </div>

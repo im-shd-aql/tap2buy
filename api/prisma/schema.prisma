@@ -92,6 +92,14 @@ model Store {
   whatsappNumber  String?   @map("whatsapp_number")
   fontStyle       String?   @default("modern") @map("font_style")
   isActive        Boolean   @default(true) @map("is_active")
+
+  // Brand settings change tracking
+  nameLastChangedAt      DateTime? @map("name_last_changed_at")
+  nameChangeCount        Int       @default(0) @map("name_change_count")
+  nameChangeCountYear    Int       @default(2026) @map("name_change_count_year")
+  categoryLastChangedAt  DateTime? @map("category_last_changed_at")
+  slugLastChangedAt      DateTime? @map("slug_last_changed_at")
+
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
@@ -110,7 +118,8 @@ model Product {
   price        Decimal     @db.Decimal(10, 2)
   comparePrice Decimal?    @map("compare_price") @db.Decimal(10, 2)
   images       String[]
-  variants     Json?
+  variants     Json?       // Legacy field - kept for migration only
+  hasVariants  Boolean     @default(false) @map("has_variants")
   stock        Int?
   category     String?
   isFeatured   Boolean     @default(false) @map("is_featured")
@@ -120,11 +129,35 @@ model Product {
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
-  store        Store       @relation(fields: [storeId], references: [id])
-  orderItems   OrderItem[]
+  store          Store            @relation(fields: [storeId], references: [id])
+  orderItems     OrderItem[]
+  productVariants ProductVariant[]
 
   @@index([storeId])
   @@map("products")
+}
+
+model ProductVariant {
+  id           String   @id @default(uuid())
+  productId    String   @map("product_id")
+  sku          String   @unique
+  name         String   // e.g. "Size M - Blue"
+  attributes   Json     // e.g. { "Size": "M", "Color": "Blue" }
+  price        Decimal  @db.Decimal(10, 2)
+  comparePrice Decimal? @map("compare_price") @db.Decimal(10, 2)
+  stock        Int?
+  images       String[] // Variant-specific images
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@index([sku])
+  @@map("product_variants")
 }
 
 model Order {
@@ -141,6 +174,9 @@ model Order {
   serviceFee        Decimal       @map("service_fee") @db.Decimal(10, 2)
   total             Decimal       @db.Decimal(10, 2)
   bookingFee        Decimal?      @map("booking_fee") @db.Decimal(10, 2)
+  paymentSlipUrl    String?       @map("payment_slip_url")
+  paymentSlipNote   String?       @map("payment_slip_note")
+  rejectionReason   String?       @map("rejection_reason")
   payhereOrderId    String?       @map("payhere_order_id")
   confirmationToken String?       @map("confirmation_token")
   notes             String?
@@ -159,14 +195,17 @@ model OrderItem {
   id           String  @id @default(uuid())
   orderId      String  @map("order_id")
   productId    String  @map("product_id")
+  variantId    String? @map("variant_id") // Links to specific ProductVariant if applicable
   productName  String  @map("product_name")
   productPrice Decimal @map("product_price") @db.Decimal(10, 2)
   quantity     Int
-  variant      Json?
+  variant      Json?   // Legacy field - kept for backward compatibility
 
-  order        Order   @relation(fields: [orderId], references: [id])
-  product      Product @relation(fields: [productId], references: [id])
+  order          Order           @relation(fields: [orderId], references: [id])
+  product        Product         @relation(fields: [productId], references: [id])
+  productVariant ProductVariant? @relation(fields: [variantId], references: [id])
 
+  @@index([variantId])
   @@map("order_items")
 }
 

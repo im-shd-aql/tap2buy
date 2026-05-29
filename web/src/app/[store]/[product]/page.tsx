@@ -5,8 +5,9 @@ import ImageGallery from "./image-gallery";
 import ShareSheet from "./share-sheet";
 import RecentlyViewedTracker from "./recently-viewed-tracker";
 import VariantSection from "./variant-section";
+import VariantSectionNew from "./variant-section-new";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, ShieldCheck } from "lucide-react";
+import { ArrowLeft, MessageCircle, ShieldCheck, Truck, RotateCcw } from "lucide-react";
 import type { Metadata } from "next";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -21,6 +22,17 @@ interface Product {
   comparePrice: string | null;
   images: string[];
   variants: any;
+  hasVariants: boolean;
+  productVariants?: {
+    id: string;
+    name: string;
+    attributes: Record<string, string>;
+    price: string;
+    comparePrice: string | null;
+    stock: number | null;
+    images: string[];
+    isActive: boolean;
+  }[];
   stock: number | null;
   badge: string | null;
   category: string | null;
@@ -156,10 +168,10 @@ export default async function ProductPage({
 
       {/* Details */}
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white px-4 pt-5 pb-6 -mt-1">
+        <div className="bg-white px-4 pt-4 pb-5 -mt-1">
           {/* Badge */}
           {badgeInfo && (
-            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-3 ${badgeInfo.bg}`}>
+            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-2 ${badgeInfo.bg}`}>
               {badgeInfo.label}
             </span>
           )}
@@ -167,7 +179,7 @@ export default async function ProductPage({
           <h1 className="text-xl sm:text-2xl font-bold leading-tight">{product.name}</h1>
 
           {/* Price section */}
-          <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mt-3">
+          <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mt-2">
             <span
               className="text-2xl sm:text-3xl font-bold"
               style={{ color: store.themeColor }}
@@ -200,9 +212,25 @@ export default async function ProductPage({
             </div>
           )}
 
+          {/* Trust strip */}
+          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-1.5 text-gray-400">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="text-xs">Secure Checkout</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-400">
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="text-xs">Easy Returns</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-400">
+              <Truck className="w-3.5 h-3.5" />
+              <span className="text-xs">Fast Delivery</span>
+            </div>
+          </div>
+
           {/* Description */}
           {product.description && (
-            <div className="mt-5 pt-5 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-gray-100">
               <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
                 {product.description}
               </p>
@@ -211,30 +239,46 @@ export default async function ProductPage({
         </div>
 
         {/* Variant selector + Add to cart */}
-        <VariantSection
-          storeId={store.id}
-          storeSlug={storeSlug}
-          product={{
-            id: product.id,
-            name: product.name,
-            price: Number(product.price),
-            image: product.images[0] || "",
-          }}
-          variants={
-            product.variants?.options?.length > 0 ? product.variants : null
-          }
-          outOfStock={product.stock === 0}
-          themeColor={store.themeColor}
-        />
+        {product.hasVariants && (product.productVariants?.length ?? 0) > 0 ? (
+          <VariantSectionNew
+            storeId={store.id}
+            storeSlug={storeSlug}
+            product={{
+              id: product.id,
+              name: product.name,
+              price: Number(product.price),
+              image: product.images[0] || "",
+            }}
+            variants={product.productVariants!}
+            outOfStock={product.stock === 0}
+            themeColor={store.themeColor}
+          />
+        ) : (
+          <VariantSection
+            storeId={store.id}
+            storeSlug={storeSlug}
+            product={{
+              id: product.id,
+              name: product.name,
+              price: Number(product.price),
+              image: product.images[0] || "",
+            }}
+            variants={
+              product.variants?.options?.length > 0 ? product.variants : null
+            }
+            outOfStock={product.stock === 0}
+            themeColor={store.themeColor}
+          />
+        )}
 
-        {/* WhatsApp Ask */}
+        {/* WhatsApp Ask — more prominent, full-width */}
         {whatsappAskLink && (
-          <div className="px-4 pb-6">
+          <div className="px-4 pb-5">
             <a
               href={whatsappAskLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#25D366]/10 text-[#25D366] rounded-2xl text-sm font-semibold hover:bg-[#25D366]/20 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#25D366] text-white rounded-2xl text-sm font-semibold hover:bg-[#20bd5a] transition-colors shadow-sm"
             >
               <MessageCircle className="w-5 h-5" />
               Ask seller about this product
@@ -245,14 +289,14 @@ export default async function ProductPage({
 
       {/* You might also like */}
       {relatedProducts.length > 0 && (
-        <section className="max-w-3xl mx-auto px-4 mt-2 mb-4">
-          <h3 className="font-bold text-lg mb-4">You might also like</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <section className="max-w-3xl mx-auto px-4 mt-1 mb-4">
+          <h3 className="font-bold text-base mb-3">You might also like</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {relatedProducts.map((rp) => (
               <Link
                 key={rp.id}
                 href={`/${storeSlug}/${rp.id}`}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+                className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-md transition-shadow duration-300"
               >
                 <div className="aspect-square bg-gray-100 relative">
                   {rp.images[0] ? (
@@ -270,8 +314,8 @@ export default async function ProductPage({
                   )}
                 </div>
                 <div className="p-2.5">
-                  <p className="text-xs font-medium line-clamp-2 leading-snug">{rp.name}</p>
-                  <p className="text-sm font-bold mt-1.5" style={{ color: store.themeColor }}>
+                  <p className="text-xs font-medium truncate leading-snug">{rp.name}</p>
+                  <p className="text-sm font-bold mt-1" style={{ color: store.themeColor }}>
                     LKR {Number(rp.price).toLocaleString()}
                   </p>
                 </div>
