@@ -44,13 +44,15 @@ function createVariantName(attributes: Record<string, string>): string {
 async function migrateVariants() {
   console.log("🔄 Starting variant migration...\n");
 
-  // Find all products with old-style variants
-  const productsWithOldVariants = await prisma.product.findMany({
+  // Find all products with old-style variants (hasVariants=false but variants field is not null)
+  const allProducts = await prisma.product.findMany({
     where: {
-      variants: { not: null },
       hasVariants: false,
     },
   });
+
+  // Filter to only products that have the variants JSON field populated
+  const productsWithOldVariants = allProducts.filter(p => p.variants !== null);
 
   console.log(`Found ${productsWithOldVariants.length} products with old-style variants\n`);
 
