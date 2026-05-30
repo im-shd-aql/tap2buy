@@ -182,9 +182,7 @@ export default function Pricing() {
               )}
 
               <a
-                href={`https://wa.me/94XXXXXXXXX?text=Hi!%20I%20want%20to%20sign%20up%20for%20the%20${encodeURIComponent(plan.name)}%20plan`}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3001/onboarding"}
                 className={`mt-8 block w-full rounded-full py-3 text-center text-sm font-semibold transition-all ${
                   plan.popular
                     ? "bg-primary text-white shadow-md shadow-primary/25 hover:bg-primary-dark"

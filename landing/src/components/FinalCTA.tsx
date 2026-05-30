@@ -28,9 +28,7 @@ export default function FinalCTA() {
 
           <div className="relative mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <a
-              href="https://wa.me/94XXXXXXXXX?text=Hi!%20I%20want%20to%20create%20my%20Tap2Buy%20store"
-              target="_blank"
-              rel="noopener noreferrer"
+              href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3001/onboarding"}
               className="w-full rounded-full bg-white px-8 py-4 text-base font-semibold text-primary shadow-lg transition-all hover:bg-warm-50 hover:shadow-xl sm:w-auto"
             >
               {t("finalCta.cta")}

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 import WelcomeStep from "./welcome-step";
 import PhoneStep from "./phone-step";
 import StoreNameStep from "./store-name-step";
@@ -28,6 +30,8 @@ const CONFETTI_COLORS = [
 ];
 
 export default function OnboardingPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [animating, setAnimating] = useState(false);
   const [animationClass, setAnimationClass] = useState("animate-step-in");
@@ -50,6 +54,7 @@ export default function OnboardingPage() {
     image: string;
   } | null>(null);
 
+  // ALL HOOKS MUST BE BEFORE ANY EARLY RETURNS
   const goToStep = useCallback(
     (next: number) => {
       if (animating) return;
@@ -65,6 +70,14 @@ export default function OnboardingPage() {
     [animating]
   );
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
+
+  // Handler functions
   function handleAuthenticated(t: string, uid: string) {
     setToken(t);
     setUserId(uid);
@@ -94,6 +107,20 @@ export default function OnboardingPage() {
       setShowCelebration(false);
       goToStep(7);
     }, 2500);
+  }
+
+  // Show loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <div className="animate-spin w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // Show nothing while redirecting
+  if (user) {
+    return null;
   }
 
   // Show progress bar on steps 2-8

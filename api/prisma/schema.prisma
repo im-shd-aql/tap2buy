@@ -45,6 +45,12 @@ enum PayoutStatus {
   failed
 }
 
+enum SubscriptionTier {
+  starter
+  pro
+  business
+}
+
 model User {
   id            String        @id @default(uuid())
   phone         String        @unique
@@ -92,6 +98,13 @@ model Store {
   whatsappNumber  String?   @map("whatsapp_number")
   fontStyle       String?   @default("modern") @map("font_style")
   isActive        Boolean   @default(true) @map("is_active")
+
+  // Subscription
+  subscriptionTier      SubscriptionTier @default(starter) @map("subscription_tier")
+  subscriptionStartedAt DateTime?        @map("subscription_started_at")
+  subscriptionExpiresAt DateTime?        @map("subscription_expires_at")
+  monthlyOrderCount     Int              @default(0) @map("monthly_order_count")
+  monthlyOrderResetAt   DateTime?        @map("monthly_order_reset_at")
 
   // Brand settings change tracking
   nameLastChangedAt      DateTime? @map("name_last_changed_at")

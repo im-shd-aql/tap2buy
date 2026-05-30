@@ -51,14 +51,14 @@ interface Store {
   products: Product[];
 }
 
-async function getStore(slug: string): Promise<Store | null> {
+async function getStore(slug: string): Promise<{ store: Store; showBranding: boolean } | null> {
   try {
     const res = await fetch(`${API_URL}/api/stores/${slug}`, {
       next: { revalidate: 30 },
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return data.store;
+    return { store: data.store, showBranding: data.showBranding ?? true };
   } catch {
     return null;
   }
@@ -70,8 +70,9 @@ export async function generateMetadata({
   params: Promise<{ store: string }>;
 }): Promise<Metadata> {
   const { store: slug } = await params;
-  const store = await getStore(slug);
-  if (!store) return { title: "Store Not Found" };
+  const data = await getStore(slug);
+  if (!data) return { title: "Store Not Found" };
+  const { store } = data;
 
   return {
     title: `${store.name} | Tap2Buy`,
@@ -118,9 +119,9 @@ export default async function StorePage({
   params: Promise<{ store: string }>;
 }) {
   const { store: slug } = await params;
-  const store = await getStore(slug);
+  const data = await getStore(slug);
 
-  if (!store) {
+  if (!data) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
@@ -133,6 +134,8 @@ export default async function StorePage({
       </div>
     );
   }
+
+  const { store, showBranding } = data;
 
   const socialEntries = store.socialLinks
     ? Object.entries(store.socialLinks).filter(([, v]) => v)
@@ -377,15 +380,17 @@ export default async function StorePage({
       </a>
 
       {/* Footer */}
-      <footer className="text-center py-8">
-        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          Powered by{" "}
-          <a href="https://tap2buy.lk" className="font-medium hover:text-gray-500 underline decoration-gray-300 underline-offset-2 transition-colors">
-            Tap2Buy
-          </a>
-        </div>
-      </footer>
+      {showBranding && (
+        <footer className="text-center py-8">
+          <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Powered by{" "}
+            <a href="https://tap2buy.lk" className="font-medium hover:text-gray-500 underline decoration-gray-300 underline-offset-2 transition-colors">
+              Tap2Buy
+            </a>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

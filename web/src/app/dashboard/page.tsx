@@ -19,7 +19,11 @@ import {
   Circle,
   ArrowRight,
   Sparkles,
+  Crown,
+  Package,
+  ArrowUpRight,
 } from "lucide-react";
+import { useSubscription, getUsagePercent, getUsageColor } from "@/lib/subscription";
 
 interface DashboardStats {
   totalOrders: number;
@@ -54,9 +58,19 @@ interface Order {
 export default function DashboardPage() {
   const { token } = useAuth();
   const { store } = useStore();
+  const { data: subData } = useSubscription();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [copied, setCopied] = useState(false);
+
+  // Usage warnings
+  const productPercent = subData?.usage.products.limit
+    ? getUsagePercent(subData.usage.products)
+    : 0;
+  const orderPercent = subData?.usage.orders.limit
+    ? getUsagePercent(subData.usage.orders)
+    : 0;
+  const showUsageWarning = productPercent >= 80 || orderPercent >= 80;
 
   useEffect(() => {
     if (!token) return;
@@ -222,6 +236,127 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Plan & Usage — always visible */}
+      {subData && (
+        <Link
+          href="/dashboard/subscription"
+          className={`block rounded-2xl p-4 border transition-colors active:opacity-90 ${
+            productPercent >= 100 || orderPercent >= 100
+              ? "bg-red-50 border-red-200"
+              : productPercent >= 80 || orderPercent >= 80
+                ? "bg-amber-50 border-amber-200"
+                : "bg-white border-gray-100 shadow-sm"
+          }`}
+        >
+          {/* Plan header */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                subData.subscription.tier === "starter"
+                  ? "bg-gray-100" : subData.subscription.tier === "pro"
+                    ? "bg-indigo-100" : "bg-amber-100"
+              }`}>
+                <Crown className={`w-3.5 h-3.5 ${
+                  subData.subscription.tier === "starter"
+                    ? "text-gray-500" : subData.subscription.tier === "pro"
+                      ? "text-indigo-600" : "text-amber-600"
+                }`} />
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-gray-900">{subData.subscription.label} Plan</span>
+                <span className="text-[10px] text-gray-400 ml-1.5">
+                  {subData.subscription.tier === "starter" ? "Free" : `Rs ${subData.tiers.find(t => t.isCurrent)?.price.toLocaleString()}/mo`}
+                </span>
+              </div>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-gray-400" />
+          </div>
+
+          {/* Usage bars */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Products */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-gray-500 flex items-center gap-1">
+                  <Package className="w-3 h-3" />
+                  Products
+                </span>
+                <span className="text-[11px] font-semibold text-gray-700">
+                  {subData.usage.products.limit !== null
+                    ? `${subData.usage.products.current}/${subData.usage.products.limit}`
+                    : `${subData.usage.products.current}`}
+                </span>
+              </div>
+              {subData.usage.products.limit !== null ? (
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      productPercent >= 100 ? "bg-red-500" : productPercent >= 80 ? "bg-amber-500" : productPercent >= 50 ? "bg-amber-400" : "bg-green-500"
+                    }`}
+                    style={{ width: `${Math.min(productPercent, 100)}%` }}
+                  />
+                </div>
+              ) : (
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-green-400 w-1/6" />
+                </div>
+              )}
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {subData.usage.products.limit === null
+                  ? "Unlimited"
+                  : productPercent >= 100
+                    ? "Limit reached"
+                    : `${subData.usage.products.limit - subData.usage.products.current} left`}
+              </p>
+            </div>
+
+            {/* Orders */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-gray-500 flex items-center gap-1">
+                  <ShoppingCart className="w-3 h-3" />
+                  Orders/mo
+                </span>
+                <span className="text-[11px] font-semibold text-gray-700">
+                  {subData.usage.orders.limit !== null
+                    ? `${subData.usage.orders.current}/${subData.usage.orders.limit}`
+                    : `${subData.usage.orders.current}`}
+                </span>
+              </div>
+              {subData.usage.orders.limit !== null ? (
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      orderPercent >= 100 ? "bg-red-500" : orderPercent >= 80 ? "bg-amber-500" : orderPercent >= 50 ? "bg-amber-400" : "bg-green-500"
+                    }`}
+                    style={{ width: `${Math.min(orderPercent, 100)}%` }}
+                  />
+                </div>
+              ) : (
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-green-400 w-1/6" />
+                </div>
+              )}
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {subData.usage.orders.limit === null
+                  ? "Unlimited"
+                  : orderPercent >= 100
+                    ? "Limit reached"
+                    : `${subData.usage.orders.limit - subData.usage.orders.current} left`}
+              </p>
+            </div>
+          </div>
+
+          {/* Upgrade nudge for Starter */}
+          {subData.subscription.tier === "starter" && (
+            <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-xs text-indigo-600 font-medium">Upgrade for more products & orders</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-indigo-500" />
+            </div>
+          )}
+        </Link>
       )}
 
       {/* Section 4 — Recent Orders Feed */}

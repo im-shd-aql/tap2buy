@@ -5,6 +5,7 @@ import { prisma } from "../config/database";
 import { requireAuth, requireSeller } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { param } from "../utils/params";
+import { getTierLimits } from "../config/tiers";
 
 const router = Router();
 
@@ -49,8 +50,20 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const storeId = param(req, "storeId");
-      await verifyStoreOwnership(storeId, req.user!.id);
+      const store = await verifyStoreOwnership(storeId, req.user!.id);
       const data = productSchema.parse(req.body);
+
+      // Enforce product limit based on subscription tier
+      const limits = getTierLimits(store.subscriptionTier);
+      if (limits.maxProducts !== null) {
+        const productCount = await prisma.product.count({ where: { storeId } });
+        if (productCount >= limits.maxProducts) {
+          throw new AppError(
+            `You've reached the ${limits.maxProducts} product limit on the ${limits.label} plan. Upgrade to add more products.`,
+            403
+          );
+        }
+      }
 
       const product = await prisma.product.create({
         data: {
@@ -216,7 +229,8 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const storeId = param(req, "storeId");
-      await verifyStoreOwnership(storeId, req.user!.id);
+      const store = await verifyStoreOwnership(storeId, req.user!.id);
+      const limits = getTierLimits(store.subscriptionTier);
 
       // Get products with view counts and calculate sales from orders
       const products = await prisma.product.findMany({
@@ -235,7 +249,6 @@ router.get(
       // Calculate analytics for each product
       const analytics = products.map((product) => {
         const sales = product.orderItems.reduce((sum, item) => {
-          // Only count confirmed/shipped/delivered orders
           if (["confirmed", "shipped", "delivered"].includes(item.order.orderStatus)) {
             return sum + item.quantity;
           }
@@ -255,17 +268,24 @@ router.get(
           id: product.id,
           name: product.name,
           views: product.views,
-          sales,
-          revenue,
-          conversionRate: Math.round(conversionRate * 100) / 100,
+          // Strip revenue data for Starter tier
+          sales: limits.hasRevenueAnalytics ? sales : 0,
+          revenue: limits.hasRevenueAnalytics ? revenue : 0,
+          conversionRate: limits.hasRevenueAnalytics
+            ? Math.round(conversionRate * 100) / 100
+            : 0,
           image: product.images[0] || null,
         };
       });
 
-      // Sort by revenue (highest first)
-      analytics.sort((a, b) => b.revenue - a.revenue);
+      // Sort by views for Starter (no revenue), by revenue for others
+      if (limits.hasRevenueAnalytics) {
+        analytics.sort((a, b) => b.revenue - a.revenue);
+      } else {
+        analytics.sort((a, b) => b.views - a.views);
+      }
 
-      res.json({ analytics });
+      res.json({ analytics, hasRevenueAnalytics: limits.hasRevenueAnalytics });
     } catch (error) {
       next(error);
     }

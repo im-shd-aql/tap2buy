@@ -49,6 +49,7 @@ export default function ConfirmDeliveryPage() {
   const token = params.token as string;
 
   const [order, setOrder] = useState<TrackedOrder | null>(null);
+  const [showBranding, setShowBranding] = useState(true);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -56,8 +57,11 @@ export default function ConfirmDeliveryPage() {
 
   useEffect(() => {
     api
-      .get<{ order: TrackedOrder }>(`/api/orders/track/${token}`)
-      .then((data) => setOrder(data.order))
+      .get<{ order: TrackedOrder; showBranding?: boolean }>(`/api/orders/track/${token}`)
+      .then((data) => {
+        setOrder(data.order);
+        setShowBranding(data.showBranding ?? true);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [token]);
@@ -254,12 +258,14 @@ export default function ConfirmDeliveryPage() {
           </Link>
         </div>
 
-        <footer className="text-center py-6 text-xs text-gray-400">
-          Powered by{" "}
-          <a href="https://tap2buy.lk" className="underline">
-            Tap2Buy
-          </a>
-        </footer>
+        {showBranding && (
+          <footer className="text-center py-6 text-xs text-gray-400">
+            Powered by{" "}
+            <a href="https://tap2buy.lk" className="underline">
+              Tap2Buy
+            </a>
+          </footer>
+        )}
       </div>
     </div>
   );

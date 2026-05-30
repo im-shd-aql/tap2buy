@@ -162,9 +162,7 @@ export default function Hero() {
             className="mt-8 flex flex-col items-center gap-4 sm:flex-row lg:justify-start"
           >
             <a
-              href="https://wa.me/94XXXXXXXXX?text=Hi!%20I%20want%20to%20create%20my%20Tap2Buy%20store"
-              target="_blank"
-              rel="noopener noreferrer"
+              href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3001/onboarding"}
               className="w-full rounded-full bg-primary px-8 py-4 text-center text-base font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary-dark hover:shadow-xl hover:shadow-primary/30 sm:w-auto"
             >
               {t("hero.cta")}

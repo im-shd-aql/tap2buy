@@ -12,12 +12,21 @@ import {
   Users,
   Store,
   TrendingUp,
+  Crown,
 } from "lucide-react";
+import { useSubscription } from "@/lib/subscription";
+
+const TIER_BADGE: Record<string, { label: string; bg: string; text: string }> = {
+  starter: { label: "Starter", bg: "bg-gray-100", text: "text-gray-600" },
+  pro: { label: "Pro", bg: "bg-indigo-100", text: "text-indigo-700" },
+  business: { label: "Business", bg: "bg-amber-100", text: "text-amber-700" },
+};
 
 function BottomTabNav() {
   const pathname = usePathname();
   const { store } = useStore();
   const { token } = useAuth();
+  const { tier } = useSubscription();
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
@@ -64,6 +73,13 @@ function BottomTabNav() {
             <span className="font-semibold text-sm truncate">
               {store?.name || "Tap2Buy"}
             </span>
+            <Link
+              href="/dashboard/subscription"
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${TIER_BADGE[tier]?.bg || "bg-gray-100"} ${TIER_BADGE[tier]?.text || "text-gray-600"}`}
+            >
+              <Crown className="w-2.5 h-2.5" />
+              {TIER_BADGE[tier]?.label || "Starter"}
+            </Link>
           </div>
         </div>
       </div>

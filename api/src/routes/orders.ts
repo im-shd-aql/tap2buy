@@ -13,6 +13,8 @@ import {
   COD_KILL_SWITCH_LIMIT,
 } from "../utils/fees";
 import { creditWallet } from "../services/wallet";
+import { getTierLimits } from "../config/tiers";
+import { getMonthlyOrderCount } from "../middleware/subscription";
 
 const router = Router();
 
@@ -54,6 +56,18 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
     });
     if (!store || !store.isActive) {
       throw new AppError("Store not found", 404);
+    }
+
+    // Enforce monthly order limit based on subscription tier
+    const limits = getTierLimits(store.subscriptionTier);
+    if (limits.maxOrdersPerMonth !== null) {
+      const currentCount = await getMonthlyOrderCount(store);
+      if (currentCount >= limits.maxOrdersPerMonth) {
+        throw new AppError(
+          `This store has reached its monthly order limit (${limits.maxOrdersPerMonth}). Please try again next month or ask the store owner to upgrade their plan.`,
+          429
+        );
+      }
     }
 
     // If COD, check seller's wallet
@@ -162,6 +176,12 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
       include: { items: true },
     });
 
+    // Increment monthly order count
+    await prisma.store.update({
+      where: { id: data.storeId },
+      data: { monthlyOrderCount: { increment: 1 } },
+    });
+
     // Deduct stock
     for (const item of data.items) {
       if (item.variantId) {
@@ -249,13 +269,15 @@ router.get(
               },
             },
           },
-          store: { select: { name: true, slug: true, themeColor: true } },
+          store: { select: { name: true, slug: true, themeColor: true, subscriptionTier: true } },
         },
       });
 
       if (!order) {
         throw new AppError("Order not found", 404);
       }
+
+      const storeLimits = getTierLimits(order.store.subscriptionTier);
 
       // Return safe subset (no internal IDs exposed)
       res.json({
@@ -271,9 +293,14 @@ router.get(
           total: order.total,
           bookingFee: order.bookingFee,
           items: order.items,
-          store: order.store,
+          store: {
+            name: order.store.name,
+            slug: order.store.slug,
+            themeColor: order.store.themeColor,
+          },
           createdAt: order.createdAt,
         },
+        showBranding: storeLimits.showBranding,
       });
     } catch (error) {
       next(error);

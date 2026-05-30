@@ -7,12 +7,33 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { sendFirebaseOtp, verifyFirebaseOtp, checkPhone } = useAuth();
+  const { sendFirebaseOtp, verifyFirebaseOtp, checkPhone, user, loading: authLoading } = useAuth();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
+
+  // Show loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // Show nothing while redirecting
+  if (user) {
+    return null;
+  }
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();

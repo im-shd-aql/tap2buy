@@ -57,9 +57,7 @@ export default function Navbar() {
         <div className="hidden items-center gap-4 md:flex">
           <LangToggle />
           <a
-            href="https://wa.me/94XXXXXXXXX?text=Hi!%20I%20want%20to%20create%20my%20Tap2Buy%20store"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3001/onboarding"}
             className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/25 transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/30"
           >
             {t("nav.cta")}
@@ -113,9 +111,7 @@ export default function Navbar() {
                 </a>
               ))}
               <a
-                href="https://wa.me/94XXXXXXXXX?text=Hi!%20I%20want%20to%20create%20my%20Tap2Buy%20store"
-                target="_blank"
-                rel="noopener noreferrer"
+                href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3001/onboarding"}
                 className="mt-2 rounded-full bg-primary px-5 py-3 text-center text-sm font-semibold text-white shadow-md"
               >
                 {t("nav.cta")}

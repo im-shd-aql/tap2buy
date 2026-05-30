@@ -61,7 +61,9 @@ async function getProduct(storeSlug: string, productId: string) {
       next: { revalidate: 30 },
     });
     if (!storeRes.ok) return null;
-    const { store } = await storeRes.json();
+    const storeData = await storeRes.json();
+    const store = storeData.store;
+    const showBranding: boolean = storeData.showBranding ?? true;
 
     const res = await fetch(
       `${API_URL}/api/stores/${store.id}/products/${productId}`,
@@ -69,7 +71,7 @@ async function getProduct(storeSlug: string, productId: string) {
     );
     if (!res.ok) return null;
     const data = await res.json();
-    return { product: data.product as Product, store: store as Store };
+    return { product: data.product as Product, store: store as Store, showBranding };
   } catch {
     return null;
   }
@@ -85,6 +87,7 @@ export async function generateMetadata({
   if (!data) return { title: "Product Not Found" };
 
   const { product, store } = data;
+  // showBranding not needed in metadata
   const price = `LKR ${Number(product.price).toLocaleString()}`;
 
   return {
@@ -110,7 +113,7 @@ export default async function ProductPage({
 
   if (!data) notFound();
 
-  const { product, store } = data;
+  const { product, store, showBranding } = data;
   const discount = product.comparePrice
     ? Math.round(
         ((Number(product.comparePrice) - Number(product.price)) /
@@ -333,15 +336,17 @@ export default async function ProductPage({
         </section>
       )}
 
-      <footer className="text-center py-6 pb-28 sm:pb-6">
-        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          Powered by{" "}
-          <a href="https://tap2buy.lk" className="underline hover:text-gray-500 transition-colors">
-            Tap2Buy
-          </a>
-        </div>
-      </footer>
+      {showBranding && (
+        <footer className="text-center py-6 pb-28 sm:pb-6">
+          <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Powered by{" "}
+            <a href="https://tap2buy.lk" className="underline hover:text-gray-500 transition-colors">
+              Tap2Buy
+            </a>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

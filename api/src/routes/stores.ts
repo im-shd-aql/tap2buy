@@ -6,6 +6,8 @@ import { requireAuth, requireSeller } from "../middleware/auth";
 import { generateUniqueSlug } from "../utils/slug";
 import { AppError } from "../middleware/errorHandler";
 import { param } from "../utils/params";
+import { getTierLimits, TIER_CONFIG, TIER_ORDER } from "../config/tiers";
+import { getMonthlyOrderCount } from "../middleware/subscription";
 
 const router = Router();
 
@@ -152,6 +154,62 @@ router.get("/me/store/limits", requireAuth, requireSeller, async (req: Request, 
   }
 });
 
+// GET /api/stores/me/subscription — Get full subscription status
+router.get("/me/subscription", requireAuth, requireSeller, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const store = await prisma.store.findUnique({
+      where: { sellerId: req.user!.id },
+    });
+
+    if (!store) {
+      throw new AppError("Store not found", 404);
+    }
+
+    const limits = getTierLimits(store.subscriptionTier);
+    const productCount = await prisma.product.count({ where: { storeId: store.id } });
+    const monthlyOrders = await getMonthlyOrderCount(store);
+
+    // Build tier cards for display
+    const tiers = TIER_ORDER.map((tier) => {
+      const config = TIER_CONFIG[tier];
+      return {
+        tier,
+        label: config.label,
+        price: config.price,
+        maxProducts: config.maxProducts,
+        maxOrdersPerMonth: config.maxOrdersPerMonth,
+        maxAdminAccounts: config.maxAdminAccounts,
+        showBranding: config.showBranding,
+        hasRevenueAnalytics: config.hasRevenueAnalytics,
+        hasCustomerManagement: config.hasCustomerManagement,
+        isCurrent: tier === store.subscriptionTier,
+      };
+    });
+
+    res.json({
+      subscription: {
+        tier: store.subscriptionTier,
+        label: limits.label,
+        startedAt: store.subscriptionStartedAt,
+        expiresAt: store.subscriptionExpiresAt,
+      },
+      usage: {
+        products: {
+          current: productCount,
+          limit: limits.maxProducts,
+        },
+        orders: {
+          current: monthlyOrders,
+          limit: limits.maxOrdersPerMonth,
+        },
+      },
+      tiers,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/stores/:slug — Get store by slug (public)
 router.get("/:slug", async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -175,7 +233,8 @@ router.get("/:slug", async (req: Request, res: Response, next: NextFunction) => 
       throw new AppError("Store not found", 404);
     }
 
-    res.json({ store });
+    const limits = getTierLimits(store.subscriptionTier);
+    res.json({ store, showBranding: limits.showBranding });
   } catch (error) {
     next(error);
   }

@@ -15,6 +15,7 @@ import {
   Store,
   Info,
   Lock,
+  Crown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -622,9 +623,19 @@ export default function StorePage() {
           </div>
         </div>
 
-        {/* Payments & Wallet */}
+        {/* Subscription & Payments */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
-          <h2 className="font-semibold text-sm text-gray-900">Payments & Wallet</h2>
+          <h2 className="font-semibold text-sm text-gray-900">Subscription & Payments</h2>
+          <Link
+            href="/dashboard/subscription"
+            className="flex items-center justify-between p-3 bg-purple-50 rounded-xl active:bg-purple-100 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <Crown className="w-5 h-5 text-purple-600" />
+              <span className="text-sm font-medium text-purple-900">Manage Plan</span>
+            </div>
+            <span className="text-purple-600 text-sm font-medium">View</span>
+          </Link>
           <Link
             href="/dashboard/wallet"
             className="flex items-center justify-between p-3 bg-indigo-50 rounded-xl active:bg-indigo-100 transition-colors"

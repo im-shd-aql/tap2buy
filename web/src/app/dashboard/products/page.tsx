@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
+import { useSubscription, getUsagePercent, getUsageColor } from "@/lib/subscription";
 import Link from "next/link";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 
 interface Product {
   id: string;
@@ -20,8 +21,14 @@ interface Product {
 export default function ProductsPage() {
   const { token } = useAuth();
   const { store } = useStore();
+  const { data: subData } = useSubscription();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const productLimit = subData?.usage.products.limit ?? null;
+  const productCount = products.length;
+  const atLimit = productLimit !== null && productCount >= productLimit;
+  const nearLimit = productLimit !== null && !atLimit && productCount >= productLimit * 0.8;
 
   useEffect(() => {
     if (!token || !store) return;
@@ -55,9 +62,35 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-bold text-gray-900">Products</h1>
         <span className="text-xs text-gray-400 font-medium">
-          {products.length} item{products.length !== 1 ? "s" : ""}
+          {productLimit !== null ? `${productCount}/${productLimit}` : `${productCount}`} item{productCount !== 1 ? "s" : ""}
         </span>
       </div>
+
+      {/* Product limit warning */}
+      {atLimit && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-800">Product limit reached</p>
+            <p className="text-xs text-red-600 mt-0.5">
+              You&apos;ve reached the {productLimit} product limit on your plan.{" "}
+              <Link href="/dashboard/subscription" className="underline font-medium">Upgrade</Link> to add more.
+            </p>
+          </div>
+        </div>
+      )}
+      {nearLimit && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Approaching product limit</p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              {productLimit! - productCount} product{productLimit! - productCount !== 1 ? "s" : ""} remaining on your plan.{" "}
+              <Link href="/dashboard/subscription" className="underline font-medium">Upgrade</Link> for more.
+            </p>
+          </div>
+        </div>
+      )}
 
       {products.length === 0 ? (
         <div className="text-center py-16">
@@ -66,13 +99,23 @@ export default function ProductsPage() {
           </div>
           <p className="text-gray-500 text-sm mb-1">Add your first product</p>
           <p className="text-gray-400 text-xs mb-5">Start selling by adding products to your store</p>
-          <Link
-            href="/dashboard/products/new"
-            className="inline-flex items-center gap-1.5 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-semibold active:scale-[0.98] transition-transform"
-          >
-            <Plus className="w-4 h-4" />
-            Add Product
-          </Link>
+          {atLimit ? (
+            <Link
+              href="/dashboard/subscription"
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-gray-300 text-gray-500 rounded-2xl text-sm font-semibold cursor-not-allowed"
+            >
+              <Plus className="w-4 h-4" />
+              Upgrade to Add
+            </Link>
+          ) : (
+            <Link
+              href="/dashboard/products/new"
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-semibold active:scale-[0.98] transition-transform"
+            >
+              <Plus className="w-4 h-4" />
+              Add Product
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
@@ -153,7 +196,7 @@ export default function ProductsPage() {
       )}
 
       {/* Floating add button */}
-      {products.length > 0 && (
+      {products.length > 0 && !atLimit && (
         <Link
           href="/dashboard/products/new"
           className="fixed bottom-20 right-4 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center active:scale-95 transition-transform z-30"

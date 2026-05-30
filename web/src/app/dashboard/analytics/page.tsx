@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
-import { TrendingUp, Eye, ShoppingBag, DollarSign, Package } from "lucide-react";
+import { TrendingUp, Eye, ShoppingBag, DollarSign, Package, Lock } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface ProductAnalytics {
   id: string;
@@ -21,17 +22,19 @@ export default function AnalyticsPage() {
   const { token } = useAuth();
   const { store } = useStore();
   const [analytics, setAnalytics] = useState<ProductAnalytics[]>([]);
+  const [hasRevenueAnalytics, setHasRevenueAnalytics] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (token && store) {
       api
-        .get<{ analytics: ProductAnalytics[] }>(
+        .get<{ analytics: ProductAnalytics[]; hasRevenueAnalytics?: boolean }>(
           `/api/stores/${store.id}/analytics`,
           { token }
         )
         .then((data) => {
           setAnalytics(data.analytics);
+          setHasRevenueAnalytics(data.hasRevenueAnalytics ?? true);
         })
         .catch((err) => {
           console.error("Failed to load analytics:", err);
@@ -79,44 +82,73 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 relative">
+          <div className={`flex items-center justify-between ${!hasRevenueAnalytics ? "opacity-30 blur-[2px]" : ""}`}>
             <div>
               <p className="text-sm text-gray-500">Total Sales</p>
-              <p className="text-2xl font-bold mt-1">{totalSales}</p>
+              <p className="text-2xl font-bold mt-1">{hasRevenueAnalytics ? totalSales : "---"}</p>
             </div>
             <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
               <ShoppingBag className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
+          {!hasRevenueAnalytics && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Lock className="w-5 h-5 text-gray-400" />
+            </div>
+          )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 relative">
+          <div className={`flex items-center justify-between ${!hasRevenueAnalytics ? "opacity-30 blur-[2px]" : ""}`}>
             <div>
               <p className="text-sm text-gray-500">Total Revenue</p>
               <p className="text-2xl font-bold mt-1">
-                LKR {totalRevenue.toLocaleString()}
+                {hasRevenueAnalytics ? `LKR ${totalRevenue.toLocaleString()}` : "---"}
               </p>
             </div>
             <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-indigo-600" />
             </div>
           </div>
+          {!hasRevenueAnalytics && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Lock className="w-5 h-5 text-gray-400" />
+            </div>
+          )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 relative">
+          <div className={`flex items-center justify-between ${!hasRevenueAnalytics ? "opacity-30 blur-[2px]" : ""}`}>
             <div>
               <p className="text-sm text-gray-500">Avg Conversion</p>
-              <p className="text-2xl font-bold mt-1">{avgConversion.toFixed(1)}%</p>
+              <p className="text-2xl font-bold mt-1">{hasRevenueAnalytics ? `${avgConversion.toFixed(1)}%` : "---"}</p>
             </div>
             <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-amber-600" />
             </div>
           </div>
+          {!hasRevenueAnalytics && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Lock className="w-5 h-5 text-gray-400" />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Upgrade prompt for Starter */}
+      {!hasRevenueAnalytics && (
+        <Link
+          href="/dashboard/subscription"
+          className="block bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-center"
+        >
+          <Lock className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
+          <p className="text-sm font-medium text-indigo-800">
+            Sales, revenue, and conversion data require the Pro plan
+          </p>
+          <p className="text-xs text-indigo-600 mt-1">Tap to upgrade</p>
+        </Link>
+      )}
 
       {/* Product List */}
       <div className="bg-white rounded-xl border border-gray-200">
@@ -188,27 +220,29 @@ export default function AnalyticsPage() {
                         {product.views.toLocaleString()}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className={`px-5 py-4 text-right ${!hasRevenueAnalytics ? "opacity-30 blur-[2px] select-none" : ""}`}>
                       <span className="text-sm font-medium text-gray-700">
-                        {product.sales}
+                        {hasRevenueAnalytics ? product.sales : "---"}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className={`px-5 py-4 text-right ${!hasRevenueAnalytics ? "opacity-30 blur-[2px] select-none" : ""}`}>
                       <span className="text-sm font-semibold text-gray-900">
-                        LKR {product.revenue.toLocaleString()}
+                        {hasRevenueAnalytics ? `LKR ${product.revenue.toLocaleString()}` : "---"}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className={`px-5 py-4 text-right ${!hasRevenueAnalytics ? "opacity-30 blur-[2px] select-none" : ""}`}>
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          product.conversionRate >= 5
-                            ? "bg-emerald-100 text-emerald-700"
-                            : product.conversionRate >= 2
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-gray-100 text-gray-600"
+                          !hasRevenueAnalytics
+                            ? "bg-gray-100 text-gray-400"
+                            : product.conversionRate >= 5
+                              ? "bg-emerald-100 text-emerald-700"
+                              : product.conversionRate >= 2
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {product.conversionRate.toFixed(1)}%
+                        {hasRevenueAnalytics ? `${product.conversionRate.toFixed(1)}%` : "---"}
                       </span>
                     </td>
                   </tr>

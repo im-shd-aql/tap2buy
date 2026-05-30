@@ -21,6 +21,7 @@ interface Store {
   whatsappNumber: string | null;
   fontStyle: string | null;
   isActive: boolean;
+  subscriptionTier: "starter" | "pro" | "business";
   createdAt: string;
 }
 

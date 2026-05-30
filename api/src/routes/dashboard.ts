@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { prisma } from "../config/database";
 import { requireAuth, requireSeller } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
+import { getTierLimits } from "../config/tiers";
 
 const router = Router();
 
@@ -175,6 +176,15 @@ router.get("/customers", requireAuth, requireSeller, async (req: Request, res: R
 
     if (!store) {
       throw new AppError("Store not found", 404);
+    }
+
+    // Gate customer management behind Pro tier
+    const limits = getTierLimits(store.subscriptionTier);
+    if (!limits.hasCustomerManagement) {
+      throw new AppError(
+        "Customer management requires the Pro plan or higher. Please upgrade your subscription.",
+        403
+      );
     }
 
     const search = (req.query.search as string) || "";
