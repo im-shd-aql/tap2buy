@@ -135,7 +135,7 @@ export default function SubscriptionPage() {
   const whatsappMessage = encodeURIComponent(
     `Hi! I'd like to upgrade my Tap2Buy store subscription from the ${subscription.label} plan. Please assist me with the process.`
   );
-  const whatsappLink = `https://wa.me/94766042075?text=${whatsappMessage}`;
+  const whatsappLink = `https://wa.me/94766489119?text=${whatsappMessage}`;
 
   const style = TIER_STYLES[subscription.tier];
 
