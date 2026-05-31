@@ -20,7 +20,11 @@ cd ..
 
 echo "==> Installing & building Landing Page"
 cd landing
-npm ci --production=false
+if [ -f package-lock.json ]; then
+  npm ci --production=false
+else
+  npm install
+fi
 npm run build
 cd ..
 
