@@ -78,3 +78,15 @@ export function requireSeller(
   }
   next();
 }
+
+export function requireSuperAdmin(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
+  if (!req.user || req.user.role !== "superadmin") {
+    next(new AppError("Super admin access required", 403));
+    return;
+  }
+  next();
+}

@@ -28,6 +28,16 @@ fi
 npm run build
 cd ..
 
+echo "==> Installing & building Admin Panel"
+cd admin
+if [ -f package-lock.json ]; then
+  npm ci --production=false
+else
+  npm install
+fi
+npm run build
+cd ..
+
 echo "==> Restarting services"
 pm2 restart ecosystem.config.js --update-env
 
@@ -51,6 +61,12 @@ if curl -sf http://localhost:3000 > /dev/null; then
   echo "    Landing: OK"
 else
   echo "    Landing: FAILED" && pm2 logs tap2buy-landing --lines 20 && exit 1
+fi
+
+if curl -sf http://localhost:3002 > /dev/null; then
+  echo "    Admin: OK"
+else
+  echo "    Admin: FAILED" && pm2 logs tap2buy-admin --lines 20 && exit 1
 fi
 
 echo "==> Done!"

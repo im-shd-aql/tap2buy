@@ -39,5 +39,18 @@ module.exports = {
         PORT: 3000,
       },
     },
+    {
+      name: "tap2buy-admin",
+      cwd: "./admin",
+      script: "node_modules/.bin/next",
+      args: "start -p 3002",
+      instances: 1,
+      exec_mode: "fork",
+      node_args: "--max-old-space-size=256",
+      env: {
+        NODE_ENV: "production",
+        PORT: 3002,
+      },
+    },
   ],
 };

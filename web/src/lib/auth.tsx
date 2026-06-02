@@ -96,6 +96,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAuthCookie();
   };
 
+  // Fully destroy reCAPTCHA verifier and replace DOM container
+  const cleanupRecaptcha = (containerId: string) => {
+    try {
+      if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      }
+    } catch {
+      recaptchaVerifierRef.current = null;
+    }
+
+    // Reset the global grecaptcha widget if it exists
+    try {
+      const w = window as any;
+      if (w.grecaptcha?.reset) {
+        w.grecaptcha.reset();
+      }
+    } catch {
+      // ignore — grecaptcha may not be loaded yet
+    }
+
+    // Replace the container DOM node entirely so reCAPTCHA sees a fresh element
+    const old = document.getElementById(containerId);
+    if (old && old.parentNode) {
+      const fresh = document.createElement("div");
+      fresh.id = containerId;
+      old.parentNode.replaceChild(fresh, old);
+    }
+  };
+
   // Firebase Phone Auth: Send OTP
   const sendFirebaseOtp = async (phone: string, recaptchaContainer: string) => {
     if (!auth) {
@@ -108,19 +138,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : phone;
 
     try {
-      // Clear existing reCAPTCHA verifier if any
-      if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-        recaptchaVerifierRef.current = null;
-      }
+      // Fully clean up any previous reCAPTCHA state
+      cleanupRecaptcha(recaptchaContainer);
 
-      // Clear the container element
-      const container = document.getElementById(recaptchaContainer);
-      if (container) {
-        container.innerHTML = "";
-      }
-
-      // Initialize reCAPTCHA
+      // Initialize fresh reCAPTCHA
       const recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainer, {
         size: "invisible",
       });
@@ -135,15 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setConfirmationResult(result);
     } catch (error: any) {
       console.error("Firebase OTP send failed:", error);
-      // Reset reCAPTCHA on error so user can retry
-      if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-        recaptchaVerifierRef.current = null;
-      }
-      const container = document.getElementById(recaptchaContainer);
-      if (container) {
-        container.innerHTML = "";
-      }
+      // Clean up on error so user can retry
+      cleanupRecaptcha(recaptchaContainer);
       throw new Error(error.message || "Failed to send OTP");
     }
   };

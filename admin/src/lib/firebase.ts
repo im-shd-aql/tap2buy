@@ -16,7 +16,6 @@ let app: FirebaseApp;
 let auth: Auth;
 let analytics: Analytics | null = null;
 
-// Initialize Firebase only on client side
 if (typeof window !== "undefined") {
   if (!getApps().length) {
     app = initializeApp(firebaseConfig);
@@ -25,7 +24,6 @@ if (typeof window !== "undefined") {
   }
   auth = getAuth(app);
 
-  // Initialize analytics (non-blocking)
   isSupported().then((yes) => {
     if (yes) analytics = getAnalytics(app);
   });

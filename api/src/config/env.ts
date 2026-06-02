@@ -35,6 +35,7 @@ export const env = {
 
   // App URLs
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3001",
+  adminUrl: process.env.ADMIN_URL || "http://localhost:3002",
   apiUrl: process.env.API_URL || "http://localhost:4000",
 
   // FCM

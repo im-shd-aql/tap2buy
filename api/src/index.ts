@@ -14,6 +14,7 @@ import walletRoutes from "./routes/wallet";
 import uploadRoutes from "./routes/upload";
 import dashboardRoutes from "./routes/dashboard";
 import reviewRoutes from "./routes/reviews";
+import adminRoutes from "./routes/admin";
 
 // Initialize Firebase
 if (env.otpMode === "production") {
@@ -29,7 +30,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: env.frontendUrl,
+  origin: [env.frontendUrl, env.adminUrl].filter(Boolean),
   credentials: true,
 }));
 app.use(express.json());
@@ -46,6 +47,7 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Health check
 app.get("/api/health", (_req, res) => {
