@@ -43,7 +43,12 @@ else
 fi
 
 echo "==> Restarting services"
-pm2 restart ecosystem.config.js --update-env
+if [ "${SKIP_ADMIN}" = "1" ]; then
+  pm2 restart tap2buy-api tap2buy-web tap2buy-landing --update-env
+  pm2 delete tap2buy-admin 2>/dev/null || true
+else
+  pm2 restart ecosystem.config.js --update-env
+fi
 
 echo "==> Waiting for services to start..."
 sleep 5
