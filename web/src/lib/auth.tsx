@@ -158,6 +158,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Firebase OTP send failed:", error);
       // Clean up on error so user can retry
       cleanupRecaptcha(recaptchaContainer);
+
+      // Provide actionable error for reCAPTCHA failures
+      if (
+        error.code === "auth/error-code:-39" ||
+        error.message?.includes("reCAPTCHA") ||
+        error.code === "auth/captcha-check-failed"
+      ) {
+        throw new Error(
+          "Verification service unavailable. Please try again in a moment."
+        );
+      }
       throw new Error(error.message || "Failed to send OTP");
     }
   };
